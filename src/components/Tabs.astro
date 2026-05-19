@@ -1,0 +1,187 @@
+---
+// src/components/Tabs.astro
+---
+<section class="content-section">
+    <div class="tab-group">
+        <button class="tab-item active" data-tab="vokalTab" onclick="window.showTab('vokalTab')">A-I-U-E-O</button>
+        <button class="tab-item" data-tab="alphabetTab" onclick="window.showTab('alphabetTab')">Huruf</button>
+        <button class="tab-item" data-tab="numbersTab" onclick="window.showTab('numbersTab')">Angka</button>
+        <button class="tab-item" data-tab="wordsTab" onclick="window.showTab('wordsTab')">Kata</button>
+        <button class="tab-item" data-tab="sentencesTab" onclick="window.showTab('sentencesTab')">Kalimat</button>
+        <button class="tab-item" data-tab="breathTab" onclick="window.showTab('breathTab')">Napas</button>
+    </div>
+
+    <div class="tabs-wrapper">
+
+        <!-- ─── VOKAL (A-I-U-E-O) ─────────── -->
+        <div id="vokalTab" class="tab-content active">
+            <div class="content-header">
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Fokus Artikulasi</h2>
+                        <p class="content-subtitle">Latih bentuk bibir & lidah untuk vokal dasar.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                        <button class="btn-fs-toggle" onclick="window.toggleFsMode()">
+                            <span class="btn-fs-icon">⛶</span>
+                            <span class="btn-fs-label">Mode Penuh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="grid-alpha" id="vokalGrid"></div>
+        </div>
+
+        <!-- ─── HURUF ─────────────────────── -->
+        <div id="alphabetTab" class="tab-content">
+            <div class="content-header">
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Mengenal Huruf</h2>
+                        <p class="content-subtitle">Ketuk kartu untuk mendengar.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                        <button class="btn-fs-toggle" onclick="window.toggleFsMode()">
+                            <span class="btn-fs-icon">⛶</span>
+                            <span class="btn-fs-label">Mode Penuh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="grid-alpha" id="alphabetGrid"></div>
+        </div>
+
+        <!-- ─── ANGKA ─────────────────────── -->
+        <div id="numbersTab" class="tab-content">
+            <div class="content-header">
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Mengenal Angka</h2>
+                        <p class="content-subtitle">Ketuk kartu untuk mendengar.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                        <button class="btn-fs-toggle" onclick="window.toggleFsMode()">
+                            <span class="btn-fs-icon">⛶</span>
+                            <span class="btn-fs-label">Mode Penuh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="grid-alpha" id="numbersGrid"></div>
+        </div>
+
+        <!-- ─── KATA ──────────────────────── -->
+        <div id="wordsTab" class="tab-content">
+            <div class="content-header">
+                <h2 class="content-title">Kosa Kata</h2>
+                <p class="content-subtitle">Perhatikan dan dengarkan.</p>
+            </div>
+            <div id="wordsGrid"></div>
+        </div>
+
+        <!-- ─── KALIMAT ───────────────────── -->
+        <div id="sentencesTab" class="tab-content">
+            <div class="content-header">
+                <h2 class="content-title">Menyusun Kalimat</h2>
+                <p class="content-subtitle">Latihan untuk kebutuhan sehari-hari.</p>
+            </div>
+            <div class="sentence-list" id="sentencesList"></div>
+        </div>
+
+        <!-- ─── NAPAS ─────────────────────── -->
+        <div id="breathTab" class="tab-content">
+            <div class="content-header">
+                <h2 class="content-title">Latihan Napas</h2>
+                <p class="content-subtitle">Ikuti panduan visual sebelum mulai berbicara.</p>
+            </div>
+            <div class="breath-container">
+                <div class="breath-circle" id="breathCircle">
+                    <span class="breath-text" id="breathText">Siap</span>
+                </div>
+                <button class="btn-breath-toggle" id="btnBreath" onclick="window.toggleBreath()">Mulai Latihan</button>
+            </div>
+        </div>
+
+        <!-- ─── KUSTOM ────────────────────── -->
+        <div id="customTab" class="tab-content">
+            <div class="content-header">
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Kartu Kustom</h2>
+                        <p class="content-subtitle">Tambahkan kata, nama, atau foto yang personal.</p>
+                    </div>
+                    <button class="btn-add-custom" onclick="window.openCustomModal()">+ Tambah</button>
+                </div>
+            </div>
+            <div class="grid-alpha" id="customGrid">
+                <div class="custom-empty" id="customEmpty">
+                    <p>Belum ada kartu kustom.</p>
+                    <p>Ketuk <strong>+ Tambah</strong> untuk membuat kartu baru.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ─── FULLSCREEN OVERLAY ────────────────────── -->
+<div class="fs-overlay" id="fsOverlay">
+    <!-- Header -->
+    <div class="fs-header">
+        <button class="fs-close" onclick="window.closeFullscreen()" aria-label="Tutup">✕</button>
+        <div class="fs-header-actions">
+            <!-- Rekam suara sendiri -->
+            <button class="fs-action-btn" id="fsRecordBtn" onclick="window.toggleRecord()" title="Rekam suara saya">🎙️</button>
+            <!-- Autoplay toggle -->
+            <button class="fs-action-btn" id="fsAutoplayBtn" onclick="window.toggleAutoplay()" title="Putar otomatis">▶</button>
+        </div>
+        <span class="fs-counter" id="fsCounter"></span>
+    </div>
+
+    <!-- Nav + Karakter utama -->
+    <div class="fs-main-row">
+        <button class="fs-nav-btn" id="fsPrevBtn" onclick="window.prevFs()" aria-label="Sebelumnya">←</button>
+        <div class="fs-char-wrap" onclick="window.fsPlaySound()">
+            <div class="fs-char" id="fsChar"></div>
+            <div class="fs-label" id="fsLabel"></div>
+            <!-- Ilustrasi mulut untuk vokal (A/I/U/E/O) -->
+            <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" />
+        </div>
+        <button class="fs-nav-btn" id="fsNextBtn" onclick="window.nextFs()" aria-label="Berikutnya">→</button>
+    </div>
+
+    <!-- Recorder playback -->
+    <div class="fs-recorder-bar" id="fsRecorderBar" style="display:none">
+        <audio id="fsAudioPlayback" controls></audio>
+    </div>
+
+    <button class="fs-play-btn" onclick="window.fsPlaySound()">Dengarkan Lagi</button>
+</div>
+
+<!-- ─── CUSTOM MODAL ───────────────────────── -->
+<div class="modal-overlay" id="customModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Kartu Baru</h3>
+            <button class="modal-close" onclick="window.closeCustomModal()">✕</button>
+        </div>
+        <label class="modal-label">Kata atau Nama</label>
+        <input class="modal-input" id="customWordInput" type="text" placeholder="Masukkan kata...">
+        <label class="modal-label">Foto (Opsional)</label>
+        <input class="modal-file" id="customImageInput" type="file" accept="image/*">
+        <button class="modal-save" onclick="window.saveCustomCard()">Simpan Kartu</button>
+    </div>
+</div>
+
+<!-- ─── CAMERA OVERLAY (DRAGGABLE) ────────── -->
+<div class="camera-overlay" id="cameraOverlay">
+    <div class="camera-header">
+        <span class="camera-title">Cermin Kamera</span>
+        <button class="camera-close" onclick="window.closeCamera()">✕</button>
+    </div>
+    <video id="cameraVideo" playsinline></video>
+    <div class="camera-hint">Geser ke atas untuk menutup</div>
+</div>

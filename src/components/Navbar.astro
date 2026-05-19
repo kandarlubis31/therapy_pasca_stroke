@@ -1,0 +1,57 @@
+---
+// src/components/Navbar.astro
+---
+<nav class="nav-primary">
+    <div class="nav-content">
+        <div class="brand-wrap">
+            <span class="brand-name">PulihBicara</span>
+            <span class="brand-sub">Terapi wicara pasca stroke</span>
+        </div>
+        <div class="nav-actions">
+            <!-- Audio Visualizer: muncul saat TTS berbicara -->
+            <div class="audio-vis" id="audioVis" aria-label="Suara sedang diputar">
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <button class="btn-settings" id="btnSettings" aria-label="Pengaturan">⚙️</button>
+        </div>
+    </div>
+</nav>
+
+<!-- Settings Popup -->
+<div class="settings-popup" id="settingsPopup">
+
+    <!-- Suara -->
+    <label>Suara</label>
+    <p class="voice-hint">✦ = suara cloud (lebih jernih, butuh internet)</p>
+    <select id="voiceSelect"></select>
+
+    <!-- Kecepatan -->
+    <label>Kecepatan</label>
+    <button id="speedToggle">Kecepatan: Normal</button>
+
+    <div class="settings-divider"></div>
+
+    <!-- Mode Tampilan -->
+    <label>Mode Tampilan</label>
+    <div class="settings-mode-row">
+        <button class="btn-mode active" id="btnModeAdult" onclick="window.setMode('adult')">🏥 Dewasa</button>
+        <button class="btn-mode" id="btnModeChild" onclick="window.setMode('child')">🎈 Anak</button>
+    </div>
+
+    <!-- Kontras Tinggi -->
+    <label>Aksesibilitas Visual</label>
+    <button class="btn-toggle-row" id="btnContrast" onclick="window.toggleContrast()">
+        <span>Kontras Tinggi</span>
+        <span class="toggle-pill" id="contrastPill">OFF</span>
+    </button>
+
+    <!-- Letter Spacing -->
+    <label>Jarak Huruf <span id="lsVal">Normal</span></label>
+    <input type="range" id="letterSpacingSlider" min="0" max="6" step="1" value="0"
+        oninput="window.updateLetterSpacing(this.value)" class="settings-slider">
+
+    <!-- Line Height -->
+    <label>Jarak Baris <span id="lhVal">Normal</span></label>
+    <input type="range" id="lineHeightSlider" min="0" max="4" step="1" value="0"
+        oninput="window.updateLineHeight(this.value)" class="settings-slider">
+</div>

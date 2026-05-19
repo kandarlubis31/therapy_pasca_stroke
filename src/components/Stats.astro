@@ -1,0 +1,67 @@
+---
+// src/components/Stats.astro
+---
+<div class="stats-bar" id="statsBar">
+    <div class="stats-bar-inner">
+        <div class="stats-bar-counts">
+            <div class="stat-pill">
+                <span class="stat-pill-label">Huruf</span>
+                <span class="stat-pill-val" id="statAlpha">0</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-pill-label">Kata</span>
+                <span class="stat-pill-val" id="statWords">0</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-pill-label">Kalimat</span>
+                <span class="stat-pill-val" id="statSent">0</span>
+            </div>
+            <div class="stat-pill highlight">
+                <span class="stat-pill-label">Total</span>
+                <span class="stat-pill-val" id="totalToday">0</span>
+            </div>
+        </div>
+        <div class="stats-bar-progress">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="stats-progress-footer">
+                <button class="btn-restart" onclick="window.resetProgress()">↻ Restart</button>
+                <div class="progress-text" id="progressText">0 / 20 latihan</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-progress-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+        gap: 8px;
+    }
+
+    .btn-restart {
+        background: none;
+        border: none;
+        color: var(--accent-peach);
+        font-size: 0.65rem;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .btn-restart:hover {
+        background: rgba(229, 140, 106, 0.1);
+        color: var(--accent-peach);
+    }
+
+    .btn-restart:active {
+        transform: scale(0.95);
+        background: rgba(229, 140, 106, 0.2);
+    }
+</style>
