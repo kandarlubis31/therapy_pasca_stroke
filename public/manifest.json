@@ -1,0 +1,28 @@
+{
+  "name": "PulihBicara",
+  "short_name": "PulihBicara",
+  "description": "Terapi wicara pasca stroke — Latihan bicara, napas, dan kosa kata",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#4A827B",
+  "orientation": "portrait",
+  "lang": "id-ID",
+  "categories": ["medical", "education", "health"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false,
+  "scope": "/"
+}
