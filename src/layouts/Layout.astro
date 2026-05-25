@@ -8,7 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>PulihBicara</title>
 
-    <!-- PWA Manifest & Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4A827B">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,9 +37,7 @@
             const deltaY = Math.abs(touch.clientY - lastTouchY);
             const overlay = document.getElementById('cameraOverlay');
             
-            // Jika gerakan horizontal lebih besar dari vertical, cegah
             if (deltaX > deltaY && deltaX > 10) {
-                // Allow swipe hanya di camera overlay
                 if (!overlay || !overlay.classList.contains('open') || !overlay.contains(e.target)) {
                     e.preventDefault();
                 }
@@ -113,8 +110,11 @@
             --font-main: 'Plus Jakarta Sans', sans-serif;
             --transition: all 0.3s ease;
             --nav-height: 60px;
+            
+            /* Dynamic Variables */
             --ls-extra: 0em;
             --lh-extra: 0;
+            --base-font-size: 16px;
         }
 
         html.mode-child {
@@ -169,7 +169,7 @@
             background: var(--bg-cream);
             color: var(--text-slate);
             font-family: var(--font-main);
-            font-size: 16px;
+            font-size: var(--base-font-size);
             line-height: 1.6;
             font-weight: 500;
             overscroll-behavior: none;
@@ -1202,7 +1202,6 @@
             .card:hover { border-color: var(--primary-teal); box-shadow: var(--shadow-hover); transform: translateY(-2px); }
         }
     </style>
-    <!-- Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

@@ -1,14 +1,11 @@
-/**
- * camera.js — Camera mirror overlay & self-recorder
- */
-
+// src/scripts/camera.js
+/* ── KAMERA (MIRROR) ────────────────────── */
 let cameraStream = null;
 
-/* ── KAMERA (MIRROR) ────────────────────── */
 export async function openCamera() {
   const overlay = document.getElementById("cameraOverlay");
   const video = document.getElementById("cameraVideo");
-  if (!overlay || !video) return;
+  if (!overlay || !video || overlay.classList.contains("open")) return;
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -17,17 +14,19 @@ export async function openCamera() {
     video.srcObject = cameraStream;
     overlay.classList.add("open");
   } catch (err) {
-    alert("Gagal mengakses kamera. Cek izin browser.");
+    alert("Gagal mengakses kamera. Pastikan browser memiliki izin dan situs menggunakan HTTPS.");
   }
 }
 
 export function closeCamera() {
   const overlay = document.getElementById("cameraOverlay");
   const video = document.getElementById("cameraVideo");
+  
   if (cameraStream) {
     cameraStream.getTracks().forEach((t) => t.stop());
     cameraStream = null;
   }
+  
   if (video) video.srcObject = null;
   if (overlay) overlay.classList.remove("open");
 }
@@ -70,9 +69,7 @@ export async function toggleRecord() {
         audioChunks.push(e.data);
       };
     } catch (err) {
-      alert(
-        "Gagal merekam. Izinkan akses mikrofon di pengaturan browser Anda.",
-      );
+      alert("Gagal merekam. Izinkan akses mikrofon di pengaturan browser Anda.");
     }
   }
 }

@@ -1,14 +1,6 @@
-/**
- * ui.js — UI logic: tabs, fullscreen, settings popup, modes, breathing, swipe/gestures
- *
- * Imports from other modules:
- *   - tts.js:  speakText, TTS
- *   - camera.js: openCamera
- *   - progress.js: addProgress, updateProgress
- */
-
+// src/scripts/ui.js
 import { speakText, TTS } from "./tts.js";
-import { openCamera } from "./camera.js";
+import { openCamera, closeCamera } from "./camera.js";
 import { addProgress, updateProgress } from "./progress.js";
 
 /* ── SETTINGS POPUP ─────────────────────── */
@@ -29,7 +21,7 @@ export function setupSettings() {
   });
 }
 
-/* ── TEMA & AKSESIBILITAS ────────────────── */
+/* ── TEMA, AKSESIBILITAS & FONT ──────────── */
 export function setupModeAndAccessibility() {
   const savedMode = localStorage.getItem("appMode") || "adult";
   setMode(savedMode);
@@ -39,13 +31,19 @@ export function setupModeAndAccessibility() {
 
   const ls = localStorage.getItem("lsVal") || "0";
   const lh = localStorage.getItem("lhVal") || "0";
+  const fs = localStorage.getItem("fsVal") || "16"; // Ukuran font dasar
+  
   updateLetterSpacing(ls);
   updateLineHeight(lh);
+  updateFontSize(fs);
 
   const lsSlider = document.getElementById("letterSpacingSlider");
   const lhSlider = document.getElementById("lineHeightSlider");
+  const fsSlider = document.getElementById("fontSizeSlider");
+  
   if (lsSlider) lsSlider.value = ls;
   if (lhSlider) lhSlider.value = lh;
+  if (fsSlider) fsSlider.value = fs;
 }
 
 export function setMode(mode) {
@@ -67,11 +65,7 @@ export function setMode(mode) {
 
 export function toggleContrast(forceState) {
   const html = document.documentElement;
-  const isHigh =
-    forceState !== undefined
-      ? forceState
-      : !html.classList.contains("high-contrast");
-
+  const isHigh = forceState !== undefined ? forceState : !html.classList.contains("high-contrast");
   html.classList.toggle("high-contrast", isHigh);
   localStorage.setItem("highContrast", String(isHigh));
 
@@ -96,17 +90,39 @@ export function updateLineHeight(val) {
   if (label) label.textContent = val == 0 ? "Normal" : `+${val}`;
 }
 
+export function updateFontSize(val) {
+  document.documentElement.style.setProperty("--base-font-size", `${val}px`);
+  localStorage.setItem("fsVal", val);
+  const label = document.getElementById("fsVal");
+  if (label) {
+     if(val == 16) label.textContent = "Normal";
+     else if(val < 16) label.textContent = "Kecil";
+     else label.textContent = "Besar";
+  }
+}
+
 /* ── TABS ───────────────────────────────── */
 export function showTab(tabId) {
-  document
-    .querySelectorAll(".tab-content")
-    .forEach((el) => el.classList.remove("active"));
-  document
-    .querySelectorAll(".tab-item")
-    .forEach((btn) => btn.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach((el) => {
+      el.classList.remove("active");
+      el.style.display = "none";
+  });
+  document.querySelectorAll(".tab-item").forEach((btn) => btn.classList.remove("active"));
 
-  document.getElementById(tabId)?.classList.add("active");
+  const target = document.getElementById(tabId);
+  if(target) {
+      target.style.display = "block";
+      // Delay kecil untuk CSS transition
+      setTimeout(() => target.classList.add("active"), 20);
+  }
+  
   document.querySelector(`[data-tab="${tabId}"]`)?.classList.add("active");
+
+  if (tabId === "vokalTab") {
+    openCamera();
+  } else {
+    closeCamera();
+  }
 
   if (tabId !== "breathTab" && isBreathing) {
     toggleBreath();
@@ -120,9 +136,7 @@ let fsCurrentId = "";
 let fsIndex = 0;
 let fsList = [];
 
-export function isFsMode() {
-  return fsMode;
-}
+export function isFsMode() { return fsMode; }
 
 export function toggleFsMode() {
   fsMode = !fsMode;
@@ -137,16 +151,11 @@ export function cardTap(text, id, type) {
   if ("vibrate" in navigator) navigator.vibrate(50);
   if (fsMode) {
     let list;
-    if (type === "number") {
-      const { NUMBERS } = __getContentData();
-      list = NUMBERS;
-    } else if (type === "alphabet") {
-      const { ALPHABET } = __getContentData();
-      list = ALPHABET;
-    } else if (type === "vokal") {
-      const { VOKAL } = __getContentData();
-      list = VOKAL;
-    } else return;
+    const content = __getContentData();
+    if (type === "number") list = content.NUMBERS;
+    else if (type === "alphabet") list = content.ALPHABET;
+    else if (type === "vokal") list = content.VOKAL;
+    else return;
 
     const idx = list.findIndex((i) => i.id === id);
     if (idx !== -1) openFs(list, idx);
@@ -183,8 +192,7 @@ function renderFs() {
   const mouthImg = document.getElementById("fsMouthImg");
 
   if (charEl) charEl.textContent = item.text;
-  if (labelEl)
-    labelEl.textContent = isNaN(Number(item.text)) ? "Huruf" : "Angka";
+  if (labelEl) labelEl.textContent = isNaN(Number(item.text)) ? "Huruf" : "Angka";
   if (counterEl) counterEl.textContent = `${fsIndex + 1} / ${fsList.length}`;
   if (prevBtn) prevBtn.disabled = fsIndex === 0;
   if (nextBtn) nextBtn.disabled = fsIndex === fsList.length - 1;
@@ -306,13 +314,11 @@ export function toggleAutoplay() {
   }
 }
 
-/* ── PLAY TTS (high-level: TTS + progress + UI) ── */
+/* ── PLAY TTS ────────────────────────────── */
 export function playTTS(text, id, type) {
   if ("vibrate" in navigator) navigator.vibrate(50);
 
-  document
-    .querySelectorAll(".playing")
-    .forEach((el) => el.classList.remove("playing"));
+  document.querySelectorAll(".playing").forEach((el) => el.classList.remove("playing"));
 
   const card =
     document.querySelector(`[data-id="${id}"]`) ||
@@ -334,30 +340,19 @@ export function playTTS(text, id, type) {
   updateProgress();
 }
 
-/* ── SWIPE GESTURE & KEYBOARD NAV (FULLSCREEN) ── */
+/* ── SWIPE & KEYBOARD NAV (FULLSCREEN) ── */
 export function setupSwipeAndKeyboard() {
   const overlay = document.getElementById("fsOverlay");
   if (!overlay) return;
   let startX = 0;
 
-  overlay.addEventListener(
-    "touchstart",
-    (e) => {
-      startX = e.touches[0].clientX;
-    },
-    { passive: true },
-  );
-
-  overlay.addEventListener(
-    "touchend",
-    (e) => {
+  overlay.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
+  overlay.addEventListener("touchend", (e) => {
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) > 60) dx < 0 ? nextFs() : prevFs();
-    },
-    { passive: true },
+    }, { passive: true }
   );
 
-  // Keyboard navigation
   document.addEventListener("keydown", (e) => {
     const fsOverlay = document.getElementById("fsOverlay");
     if (!fsOverlay?.classList.contains("show")) return;
@@ -370,19 +365,14 @@ export function setupSwipeAndKeyboard() {
     }
   });
 
-  // Autoplay stop on manual navigation
-  const stopAutoplayIfActive = () => {
-    if (isAutoplay) toggleAutoplay();
-  };
+  const stopAutoplayIfActive = () => { if (isAutoplay) toggleAutoplay(); };
   document.getElementById("fsPrevBtn")?.addEventListener("click", stopAutoplayIfActive);
   document.getElementById("fsNextBtn")?.addEventListener("click", stopAutoplayIfActive);
   document.querySelector("#fsOverlay .fs-close")?.addEventListener("click", stopAutoplayIfActive);
 }
 
-/* ── INTERNAL: dynamic content data helper ────── */
-// This avoids importing .astro components into JS modules
+/* ── DATA HELPER ───────────────────────── */
 function __getContentData() {
-  // These are set on window by app.js at render time
   return {
     ALPHABET: window.__ALPHABET || [],
     NUMBERS: window.__NUMBERS || [],
