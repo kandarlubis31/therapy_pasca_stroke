@@ -6,7 +6,7 @@
 
 import { ALPHABET, WORDS, SENTENCES, NUMBERS, VOKAL } from "../data/content.js";
 
-import { setupVoices, setupSpeed } from "./tts.js";
+import { setupVoices, setupSpeed, refreshVoices, normalizeText } from "./tts.js";
 import { loadCustomCards, openCustomModal, closeCustomModal, saveCustomCard, deleteCustomCard } from "./custom.js";
 import { openCamera, closeCamera, toggleRecord } from "./camera.js";
 import { resetProgress, updateProgress } from "./progress.js";
@@ -27,6 +27,9 @@ import {
   fsPlaySound,
   toggleBreath,
   toggleAutoplay,
+  toggleLoop,
+  setAutoplaySpeed,
+  getAutoplaySpeed,
   setupSwipeAndKeyboard,
   playTTS,
 } from "./ui.js";
@@ -53,6 +56,10 @@ window.closeFullscreen = closeFullscreen;
 window.fsPlaySound = fsPlaySound;
 window.toggleBreath = toggleBreath;
 window.toggleAutoplay = toggleAutoplay;
+window.toggleLoop = toggleLoop;
+window.setAutoplaySpeed = setAutoplaySpeed;
+window.getAutoplaySpeed = getAutoplaySpeed;
+window.refreshVoices = refreshVoices;
 window.toggleRecord = toggleRecord;
 window.playTTS = playTTS;
 window.resetProgress = resetProgress;

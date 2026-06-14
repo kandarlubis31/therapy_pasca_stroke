@@ -291,6 +291,40 @@ function resetBreath(circle, text) {
 /* ── AUTOPLAY FULLSCREEN ─────────────────────── */
 let autoplayTimer = null;
 let isAutoplay = false;
+let isLoop = false;
+const AUTOPLAY_SPEED_KEY = "autoplaySpeed";
+
+export function getAutoplaySpeed() {
+  return parseInt(localStorage.getItem(AUTOPLAY_SPEED_KEY)) || 3;
+}
+
+export function setAutoplaySpeed(val) {
+  localStorage.setItem(AUTOPLAY_SPEED_KEY, val);
+  const label = document.getElementById("fsSpeedVal");
+  if (label) label.textContent = val + "s";
+  // Restart autoplay dengan speed baru
+  if (isAutoplay) {
+    clearInterval(autoplayTimer);
+    startAutoplayTimer();
+  }
+}
+
+function startAutoplayTimer() {
+  const speed = getAutoplaySpeed() * 1000;
+  autoplayTimer = setInterval(() => {
+    if (fsIndex >= fsList.length - 1) {
+      if (isLoop) {
+        // Loop: balik ke index 0
+        fsIndex = -1;
+        nextFs();
+      } else {
+        toggleAutoplay();
+      }
+    } else {
+      nextFs();
+    }
+  }, speed);
+}
 
 export function toggleAutoplay() {
   isAutoplay = !isAutoplay;
@@ -302,15 +336,17 @@ export function toggleAutoplay() {
 
   if (isAutoplay) {
     nextFs();
-    autoplayTimer = setInterval(() => {
-      if (fsIndex >= fsList.length - 1) {
-        toggleAutoplay();
-      } else {
-        nextFs();
-      }
-    }, 4000);
+    startAutoplayTimer();
   } else {
     clearInterval(autoplayTimer);
+  }
+}
+
+export function toggleLoop() {
+  isLoop = !isLoop;
+  const btn = document.getElementById("fsLoopBtn");
+  if (btn) {
+    btn.classList.toggle("active-loop", isLoop);
   }
 }
 

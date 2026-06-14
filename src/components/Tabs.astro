@@ -127,7 +127,7 @@
     </div>
 </section>
 
-<!-- ─── FULLSCREEN OVERLAY ────────────────────── -->
+    <!-- ─── FULLSCREEN OVERLAY ────────────────────── -->
 <div class="fs-overlay" id="fsOverlay">
     <!-- Header -->
     <div class="fs-header">
@@ -135,6 +135,8 @@
         <div class="fs-header-actions">
             <!-- Rekam suara sendiri -->
             <button class="fs-action-btn" id="fsRecordBtn" onclick="window.toggleRecord()" title="Rekam suara saya">🎙️</button>
+            <!-- Loop toggle -->
+            <button class="fs-action-btn" id="fsLoopBtn" onclick="window.toggleLoop()" title="Ulangi terus">🔁</button>
             <!-- Autoplay toggle -->
             <button class="fs-action-btn" id="fsAutoplayBtn" onclick="window.toggleAutoplay()" title="Putar otomatis">▶</button>
         </div>
@@ -158,7 +160,15 @@
         <audio id="fsAudioPlayback" controls></audio>
     </div>
 
-    <button class="fs-play-btn" onclick="window.fsPlaySound()">Dengarkan Lagi</button>
+    <!-- Speed slider & play button row -->
+    <div class="fs-bottom-row">
+        <div class="fs-speed-control">
+            <label class="fs-speed-label">⏱ <span id="fsSpeedVal">3s</span></label>
+            <input type="range" class="fs-speed-slider" id="fsSpeedSlider" min="1" max="10" step="0.5" value="3"
+                oninput="document.getElementById('fsSpeedVal').textContent=this.value+'s'; window.setAutoplaySpeed(parseFloat(this.value))">
+        </div>
+        <button class="fs-play-btn" onclick="window.fsPlaySound()">Dengarkan Lagi</button>
+    </div>
 </div>
 
 <!-- ─── CUSTOM MODAL ───────────────────────── -->
@@ -182,6 +192,7 @@
         <span class="camera-title">Cermin Kamera</span>
         <button class="camera-close" onclick="window.closeCamera()">✕</button>
     </div>
-    <video id="cameraVideo" playsinline></video>
+    <!-- FIX: tambah autoplay biar stream langsung jalan -->
+    <video id="cameraVideo" autoplay playsinline></video>
     <div class="camera-hint">Geser ke atas untuk menutup</div>
 </div>

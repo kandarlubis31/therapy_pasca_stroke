@@ -34,66 +34,106 @@ export const TTS = {
   },
 };
 
+/* ── MAPPING PENGUCAPAN ALFABET ──────────── */
+// Huruf tunggal dibaca sesuai ejaan Bahasa Indonesia biar TTS benar
+const ALPHABET_PRONUNCIATION = {
+  "A": "A", "B": "Bé", "C": "Cé", "D": "Dé", "E": "É", "F": "Éf",
+  "G": "Gé", "H": "Ha", "I": "I", "J": "Jé", "K": "Ka", "L": "Él",
+  "M": "Ém", "N": "Én", "O": "O", "P": "Pé", "Q": "Ki", "R": "Ér",
+  "S": "És", "T": "Té", "U": "U", "V": "Fé", "W": "Wé", "X": "Éks",
+  "Y": "Yé", "Z": "Zét"
+};
+
+function isSingleLetter(text) {
+  return /^[A-Za-z]$/.test(text);
+}
+
+export function normalizeText(text) {
+  if (isSingleLetter(text)) {
+    const upper = text.toUpperCase();
+    return ALPHABET_PRONUNCIATION[upper] || text;
+  }
+  return text;
+}
+
 /**
- * Speak text with haptic feedback and callback.
- * Low-level: does NOT update progress or card UI.
+ * Speak text — normalisasi huruf tunggal dulu
  */
 export function speakText(text, lang = "id-ID", callback) {
-  TTS.speak(text, lang, callback);
+  const normalized = normalizeText(text);
+  TTS.speak(normalized, lang, callback);
 }
 
 /* ── VOICE SETUP ────────────────────────── */
-export function setupVoices() {
-  const populate = () => {
-    voices = TTS.synth.getVoices();
-    const select = document.getElementById("voiceSelect");
-    if (!select || voices.length === 0) return;
+function populateVoices() {
+  const newVoices = TTS.synth.getVoices();
+  if (!newVoices || newVoices.length === 0) return false;
+  
+  voices = newVoices;
+  const select = document.getElementById("voiceSelect");
+  if (!select) return true;
 
-    const score = (v) => {
-      let s = 0;
-      const name = v.name.toLowerCase();
-      if (name.includes("premium") || name.includes("enhanced")) s += 10;
-      if (name.includes("google")) s += 5;
-      if (!v.localService) s += 3;
-      return s;
-    };
-
-    const idVoices = voices.filter((v) => v.lang.startsWith("id"));
-    const otherVoices = voices.filter((v) => !v.lang.startsWith("id"));
-
-    idVoices.sort((a, b) => score(b) - score(a));
-    otherVoices.sort((a, b) => score(b) - score(a));
-
-    const buildOptions = (list) =>
-      list
-        .map(
-          (v) =>
-            `<option value="${v.voiceURI}" ${v.voiceURI === selectedVoiceURI ? "selected" : ""}>` +
-            `${v.name} (${v.lang})${!v.localService ? " ✦" : ""}</option>`,
-        )
-        .join("");
-
-    select.innerHTML =
-      (idVoices.length
-        ? `<optgroup label="Bahasa Indonesia">${buildOptions(idVoices)}</optgroup>`
-        : "") +
-      (otherVoices.length
-        ? `<optgroup label="Bahasa Lain">${buildOptions(otherVoices)}</optgroup>`
-        : "");
-
-    if (!selectedVoiceURI) {
-      const best = idVoices[0] || otherVoices[0];
-      if (best) {
-        selectedVoiceURI = best.voiceURI;
-        select.value = selectedVoiceURI;
-        localStorage.setItem("ttsVoice", selectedVoiceURI);
-      }
-    }
+  const score = (v) => {
+    let s = 0;
+    const name = v.name.toLowerCase();
+    if (name.includes("premium") || name.includes("enhanced")) s += 10;
+    if (name.includes("google")) s += 5;
+    if (!v.localService) s += 3;
+    return s;
   };
 
-  populate();
+  const idVoices = voices.filter((v) => v.lang.startsWith("id"));
+  const otherVoices = voices.filter((v) => !v.lang.startsWith("id"));
+
+  idVoices.sort((a, b) => score(b) - score(a));
+  otherVoices.sort((a, b) => score(b) - score(a));
+
+  const buildOptions = (list) =>
+    list
+      .map(
+        (v) =>
+          `<option value="${v.voiceURI}" ${v.voiceURI === selectedVoiceURI ? "selected" : ""}>` +
+          `${v.name} (${v.lang})${!v.localService ? " ✦" : ""}</option>`,
+      )
+      .join("");
+
+  select.innerHTML =
+    (idVoices.length
+      ? `<optgroup label="Bahasa Indonesia">${buildOptions(idVoices)}</optgroup>`
+      : "") +
+    (otherVoices.length
+      ? `<optgroup label="Bahasa Lain">${buildOptions(otherVoices)}</optgroup>`
+      : "");
+
+  if (!selectedVoiceURI) {
+    const best = idVoices[0] || otherVoices[0];
+    if (best) {
+      selectedVoiceURI = best.voiceURI;
+      select.value = selectedVoiceURI;
+      localStorage.setItem("ttsVoice", selectedVoiceURI);
+    }
+  }
+  
+  return true;
+}
+
+export function setupVoices() {
+  // Coba langsung
+  let hasVoices = populateVoices();
+
+  // Mobile Chrome kadang telat -> polling + onvoiceschanged
   if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = populate;
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  // Fallback: polling setiap 300ms sampai voices tersedia (max 5s)
+  if (!hasVoices) {
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      const ok = populateVoices();
+      if (ok || attempts > 15) clearInterval(poll);
+    }, 300);
   }
 
   document.getElementById("voiceSelect")?.addEventListener("change", (e) => {
@@ -101,6 +141,17 @@ export function setupVoices() {
     localStorage.setItem("ttsVoice", selectedVoiceURI);
     TTS.speak("Halo");
   });
+}
+
+/* ── REFRESH VOICE ─────────────────────── */
+export function refreshVoices() {
+  populateVoices();
+  const select = document.getElementById("voiceSelect");
+  if (select) {
+    if (selectedVoiceURI && select.querySelector(`option[value="${selectedVoiceURI}"]`)) {
+      select.value = selectedVoiceURI;
+    }
+  }
 }
 
 /* ── SPEED ──────────────────────────────── */

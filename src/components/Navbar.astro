@@ -20,7 +20,10 @@
 
     <label>Suara</label>
     <p class="voice-hint">✦ = suara cloud (lebih jernih, butuh internet)</p>
-    <select id="voiceSelect"></select>
+    <div class="voice-row">
+        <select id="voiceSelect"></select>
+        <button class="btn-refresh-voice" onclick="window.refreshVoices()" title="Muat ulang daftar suara">🔄</button>
+    </div>
 
     <label>Kecepatan</label>
     <button id="speedToggle">Kecepatan: Normal</button>

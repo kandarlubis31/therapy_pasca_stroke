@@ -44,48 +44,85 @@
             }
         }, { passive: false });
 
-        // Draggable camera overlay (vertical only)
+        // Draggable camera overlay — FREE DRAG
         (() => {
-            const overlay = document.getElementById('cameraOverlay');
+            var overlay = document.getElementById('cameraOverlay');
             if (!overlay) return;
             
-            let isDragging = false;
-            let startY = 0;
-            let startTranslateY = 0;
+            var isDragging = false;
+            var startX = 0, startY = 0;
+            var startLeft = 0, startTop = 0;
+            var posLeft = -1, posTop = -1;
             
-            const header = overlay.querySelector('.camera-header');
-            if (!header) return;
+            function getX(e) {
+                return e.touches ? e.touches[0].clientX : e.clientX;
+            }
+            function getY(e) {
+                return e.touches ? e.touches[0].clientY : e.clientY;
+            }
             
-            header.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                startY = e.touches[0].clientY;
-                const transform = overlay.style.transform;
-                const match = transform.match(/translateY\(([^)]+)px\)/);
-                startTranslateY = match ? parseInt(match[1]) : 0;
-            }, { passive: true });
+            window.__cameraResetPosition = function() {
+                posLeft = -1;
+                posTop = -1;
+                overlay.style.left = '';
+                overlay.style.top = '';
+                overlay.style.right = '';
+            };
             
-            document.addEventListener('touchmove', (e) => {
-                if (!isDragging || !overlay.classList.contains('open')) return;
-                const deltaY = e.touches[0].clientY - startY;
-                const newTranslateY = startTranslateY + deltaY;
-                if (newTranslateY >= 0) {
-                    overlay.style.transform = `translateY(${newTranslateY}px)`;
+            function onPointerDown(e) {
+                if (!overlay.classList.contains('open')) return;
+                startX = getX(e);
+                startY = getY(e);
+                
+                if (posLeft === -1) {
+                    var rect = overlay.getBoundingClientRect();
+                    startLeft = rect.left;
+                    startTop = rect.top;
+                } else {
+                    startLeft = posLeft;
+                    startTop = posTop;
                 }
-            }, { passive: true });
+                
+                isDragging = true;
+                overlay.classList.add('dragging');
+            }
             
-            document.addEventListener('touchend', () => {
+            function onPointerMove(e) {
+                if (!isDragging) return;
+                var dx = getX(e) - startX;
+                var dy = getY(e) - startY;
+                var newLeft = startLeft + dx;
+                var newTop = startTop + dy;
+                
+                var w = overlay.offsetWidth;
+                var h = overlay.offsetHeight;
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - w));
+                newTop = Math.max(0, Math.min(newTop, window.innerHeight - h));
+                
+                posLeft = newLeft;
+                posTop = newTop;
+                overlay.style.right = '';
+                overlay.style.left = newLeft + 'px';
+                overlay.style.top = newTop + 'px';
+                
+                e.preventDefault();
+            }
+            
+            function onPointerUp() {
                 if (!isDragging) return;
                 isDragging = false;
-                const transform = overlay.style.transform;
-                const match = transform.match(/translateY\(([^)]+)px\)/);
-                const translateY = match ? parseInt(match[1]) : 0;
-                
-                if (translateY > 80) {
-                    window.closeCamera();
-                } else {
-                    overlay.style.transform = 'translateY(0)';
-                }
-            });
+                overlay.classList.remove('dragging');
+            }
+            
+            overlay.addEventListener('touchstart', onPointerDown, { passive: true });
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
+            
+            overlay.addEventListener('mousedown', onPointerDown);
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
+            
+            overlay.addEventListener('dragstart', function(e) { e.preventDefault(); });
         })();
     </script>
     <style is:global>
@@ -111,7 +148,6 @@
             --transition: all 0.3s ease;
             --nav-height: 60px;
             
-            /* Dynamic Variables */
             --ls-extra: 0em;
             --lh-extra: 0;
             --base-font-size: 16px;
@@ -169,11 +205,19 @@
             background: var(--bg-cream);
             color: var(--text-slate);
             font-family: var(--font-main);
-            font-size: var(--base-font-size);
+            font-size: 16px;
             line-height: 1.6;
             font-weight: 500;
             overscroll-behavior: none;
             overflow-x: hidden;
+        }
+        /* Font-size hanya untuk area konten (content-section, fs-overlay, breath, modal, reward) */
+        .content-section,
+        .fs-overlay,
+        .breath-container,
+        .modal-card,
+        .reward-modal {
+            font-size: var(--base-font-size);
         }
 
         .nav-primary {
@@ -820,6 +864,39 @@
         }
         .fs-play-btn:active { background: var(--primary-dark); transform: scale(0.97); }
 
+        .fs-bottom-row {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .fs-speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        .fs-speed-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .fs-speed-slider {
+            flex: 1;
+            accent-color: var(--primary-teal);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .fs-action-btn.active-loop {
+            background: var(--accent-peach);
+            color: white;
+        }
+
         .nav-actions {
             display: flex;
             align-items: center;
@@ -917,14 +994,39 @@
             margin-left: 4px;
         }
 
+        .voice-row {
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+        }
+        .voice-row select {
+            flex: 1;
+            min-width: 0;
+        }
+        .btn-refresh-voice {
+            width: 40px;
+            flex-shrink: 0;
+            padding: 0;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border-soft);
+            background: var(--bg-cream);
+            color: var(--primary-teal);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .btn-refresh-voice:active { background: var(--primary-light); }
+
+        /* ─── CAMERA OVERLAY ─── */
         .camera-overlay {
             display: none;
             position: fixed;
-            bottom: auto;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: min(280px, calc(100vw - 1.5rem));
+            right: 1rem;
+            top: 80px;
+            width: min(200px, calc(100vw - 1.5rem));
             background: var(--surface-card);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-hover);
@@ -932,29 +1034,31 @@
             overflow: hidden;
             border: 1px solid var(--border-soft);
             touch-action: none;
-            will-change: transform;
-            transition: transform 0.2s ease;
+            cursor: grab;
+            user-select: none;
         }
         .camera-overlay.open { display: block; }
+        .camera-overlay.dragging {
+            transition: none !important;
+            will-change: left, top;
+        }
         .camera-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.6rem 0.9rem;
+            padding: 0.4rem 0.6rem;
             background: var(--primary-teal);
             color: white;
-            cursor: grab;
-            user-select: none;
         }
         .camera-header:active { cursor: grabbing; }
-        .camera-title { font-weight: 700; font-size: 0.85rem; }
+        .camera-title { font-weight: 700; font-size: 0.75rem; }
         .camera-close {
             background: none;
             border: none;
             color: white;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            padding: 0.2rem;
+            padding: 0.1rem 0.3rem;
             touch-action: manipulation;
         }
         #cameraVideo {
@@ -962,12 +1066,12 @@
             display: block;
             transform: scaleX(-1);
             background: #000;
-            max-height: 160px;
+            max-height: 120px;
             object-fit: cover;
         }
         .camera-hint {
-            padding: 0.5rem 0.85rem;
-            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
             text-align: center;
         }
@@ -1184,8 +1288,8 @@
             .content-title { font-size: 1.4rem; }
             .card { min-height: 100px; padding: 1rem 0.5rem; }
             .alpha-card .alpha-main { font-size: 2.2rem; }
-            .camera-overlay { width: min(320px, calc(100vw - 2rem)); }
-            #cameraVideo { max-height: 200px; }
+            .camera-overlay { width: min(240px, calc(100vw - 2rem)); }
+            #cameraVideo { max-height: 160px; }
         }
 
         @media (min-width: 768px) {

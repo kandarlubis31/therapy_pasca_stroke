@@ -12,6 +12,7 @@ export async function openCamera() {
       video: { facingMode: "user" },
     });
     video.srcObject = cameraStream;
+    await video.play();
     overlay.classList.add("open");
   } catch (err) {
     alert("Gagal mengakses kamera. Pastikan browser memiliki izin dan situs menggunakan HTTPS.");
@@ -28,7 +29,11 @@ export function closeCamera() {
   }
   
   if (video) video.srcObject = null;
-  if (overlay) overlay.classList.remove("open");
+  if (overlay) {
+    overlay.classList.remove("open");
+    // Reset posisi ke default CSS
+    if (window.__cameraResetPosition) window.__cameraResetPosition();
+  }
 }
 
 /* ── SELF RECORDER (FULLSCREEN) ──────────────── */
