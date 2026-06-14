@@ -3,9 +3,14 @@
 ---
 <nav class="nav-primary">
     <div class="nav-content">
-        <div class="brand-wrap">
-            <span class="brand-name">PulihBicara</span>
-            <span class="brand-sub">Terapi wicara pasca stroke</span>
+        <div class="nav-left">
+            <button class="btn-hamburger" id="btnHamburger" onclick="window.toggleSidebar()" aria-label="Buka menu navigasi">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="brand-wrap">
+                <span class="brand-name">PulihBicara</span>
+                <span class="brand-sub">Terapi wicara pasca stroke</span>
+            </div>
         </div>
         <div class="nav-actions">
             <div class="audio-vis" id="audioVis" aria-label="Suara sedang diputar">
@@ -16,16 +21,103 @@
     </div>
 </nav>
 
+<!-- Overlay untuk menutup sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="window.closeSidebar()"></div>
+
+<!-- ─── SIDEBAR DRAWER ─────────────────────── -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <span class="sidebar-brand-icon">🗣️</span>
+            <div>
+                <div class="sidebar-brand-name">PulihBicara</div>
+                <div class="sidebar-brand-sub">Terapi wicara</div>
+            </div>
+        </div>
+        <button class="sidebar-close" onclick="window.closeSidebar()" aria-label="Tutup menu">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <button class="sidebar-item active" data-tab="vokalTab" onclick="window.navToTab('vokalTab')">
+            <span class="sidebar-item-icon">🔊</span>
+            <span class="sidebar-item-label">A-I-U-E-O</span>
+        </button>
+        <button class="sidebar-item" data-tab="alphabetTab" onclick="window.navToTab('alphabetTab')">
+            <span class="sidebar-item-icon">🔤</span>
+            <span class="sidebar-item-label">Huruf</span>
+        </button>
+        <button class="sidebar-item" data-tab="numbersTab" onclick="window.navToTab('numbersTab')">
+            <span class="sidebar-item-icon">🔢</span>
+            <span class="sidebar-item-label">Angka</span>
+        </button>
+        <button class="sidebar-item" data-tab="wordsTab" onclick="window.navToTab('wordsTab')">
+            <span class="sidebar-item-icon">📖</span>
+            <span class="sidebar-item-label">Kata</span>
+        </button>
+        <button class="sidebar-item" data-tab="sentencesTab" onclick="window.navToTab('sentencesTab')">
+            <span class="sidebar-item-icon">💬</span>
+            <span class="sidebar-item-label">Kalimat</span>
+        </button>
+        <button class="sidebar-item" data-tab="breathTab" onclick="window.navToTab('breathTab')">
+            <span class="sidebar-item-icon">🫁</span>
+            <span class="sidebar-item-label">Napas</span>
+        </button>
+        <div class="sidebar-divider"></div>
+        <button class="sidebar-item" data-tab="customTab" onclick="window.navToTab('customTab')">
+            <span class="sidebar-item-icon">⭐</span>
+            <span class="sidebar-item-label">Kartu Kustom</span>
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">
+        <!-- Mode toggle langsung di sidebar -->
+        <div class="sidebar-mode-switch">
+            <button class="sidebar-mode-btn active" id="sbModeAdult" onclick="window.setMode('adult')">
+                <span class="sidebar-mode-icon">🏥</span>
+                <span class="sidebar-mode-label">Dewasa</span>
+            </button>
+            <button class="sidebar-mode-btn" id="sbModeChild" onclick="window.setMode('child')">
+                <span class="sidebar-mode-icon">🎈</span>
+                <span class="sidebar-mode-label">Anak</span>
+            </button>
+        </div>
+        <div class="sidebar-footer-text">© 2026 PulihBicara</div>
+    </div>
+</aside>
+
 <div class="settings-popup" id="settingsPopup">
 
-    <label>Suara</label>
-    <p class="voice-hint">✦ = suara cloud (lebih jernih, butuh internet)</p>
+    <label>Pilih Suara</label>
+    <p class="voice-hint">♀️ perempuan · ♂️ laki-laki · ✦ suara cloud (lebih jernih)</p>
     <div class="voice-row">
         <select id="voiceSelect"></select>
         <button class="btn-refresh-voice" onclick="window.refreshVoices()" title="Muat ulang daftar suara">🔄</button>
     </div>
 
-    <label>Kecepatan</label>
+    <label>Nada Suara</label>
+    <div class="tone-preset-row">
+        <button class="tone-preset-btn" data-tone="standar" onclick="window.applyTonePreset('standar')">
+            <span>🎯</span> Standar
+        </button>
+        <button class="tone-preset-btn" data-tone="lembut" onclick="window.applyTonePreset('lembut')">
+            <span>🫂</span> Lembut
+        </button>
+        <button class="tone-preset-btn" data-tone="ceria" onclick="window.applyTonePreset('ceria')">
+            <span>☀️</span> Ceria
+        </button>
+        <button class="tone-preset-btn" data-tone="tegas" onclick="window.applyTonePreset('tegas')">
+            <span>💪</span> Tegas
+        </button>
+        <button class="tone-preset-btn" data-tone="anak" onclick="window.applyTonePreset('anak')">
+            <span>🧒</span> Anak
+        </button>
+    </div>
+
+    <label>Tinggi Nada <span id="pitchVal">Normal</span></label>
+    <input type="range" id="pitchSlider" min="0.3" max="2.0" step="0.05" value="1.0"
+        class="settings-slider">
+
+    <label>Kecepatan <span id="speedVal">Normal</span></label>
     <button id="speedToggle">Kecepatan: Normal</button>
 
     <div class="settings-divider"></div>

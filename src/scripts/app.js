@@ -6,7 +6,7 @@
 
 import { ALPHABET, WORDS, SENTENCES, NUMBERS, VOKAL } from "../data/content.js";
 
-import { setupVoices, setupSpeed, refreshVoices, normalizeText } from "./tts.js";
+import { setupVoices, setupSpeed, refreshVoices, normalizeText, setupPitch, applyTonePreset, restoreTone, getTonePresets } from "./tts.js";
 import { loadCustomCards, openCustomModal, closeCustomModal, saveCustomCard, deleteCustomCard } from "./custom.js";
 import { openCamera, closeCamera, toggleRecord } from "./camera.js";
 import { resetProgress, updateProgress } from "./progress.js";
@@ -32,12 +32,18 @@ import {
   getAutoplaySpeed,
   setupSwipeAndKeyboard,
   playTTS,
+  toggleSidebar,
+  openSidebar,
+  closeSidebar,
+  navToTab,
+  restoreSidebarState,
 } from "./ui.js";
 
 // ── Expose content data for dynamic imports (used by ui.js fullscreen) ──
 window.__ALPHABET = ALPHABET;
 window.__NUMBERS = NUMBERS;
 window.__VOKAL = VOKAL;
+window.__WORDS = WORDS;
 
 // ── Expose all public functions on window for inline onclick handlers ──
 window.setMode = setMode;
@@ -62,6 +68,11 @@ window.getAutoplaySpeed = getAutoplaySpeed;
 window.refreshVoices = refreshVoices;
 window.toggleRecord = toggleRecord;
 window.playTTS = playTTS;
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.navToTab = navToTab;
+window.applyTonePreset = applyTonePreset;
+window.getTonePresets = getTonePresets;
 window.resetProgress = resetProgress;
 window.openCustomModal = openCustomModal;
 window.closeCustomModal = closeCustomModal;
@@ -73,9 +84,12 @@ window.addEventListener("load", initApp);
 
 function initApp() {
   setupSpeed();
+  setupPitch();
   setupVoices();
   setupSettings();
   setupModeAndAccessibility();
+  restoreSidebarState();
+  restoreTone();
   setupSwipeAndKeyboard();
   renderContent();
   loadCustomCards();
@@ -145,7 +159,7 @@ function renderContent() {
                 <div class="grid-words">${items
                   .map(
                     (i) =>
-                      `<button class="card word-card" data-id="${i.id}" onclick="window.playTTS('${i.text}', '${i.id}', 'word')">
+                      `<button class="card word-card" data-id="${i.id}" onclick="window.cardTap('${i.text}', '${i.id}', 'word')">
                         <span class="card-check" id="chk_${i.id}">\u2713</span>
                         <span class="word-initial">${i.text.charAt(0)}</span>
                         <span class="word-text">${i.text}</span>

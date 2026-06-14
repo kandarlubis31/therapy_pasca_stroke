@@ -2,15 +2,6 @@
 // src/components/Tabs.astro
 ---
 <section class="content-section">
-    <div class="tab-group">
-        <button class="tab-item active" data-tab="vokalTab" onclick="window.showTab('vokalTab')">A-I-U-E-O</button>
-        <button class="tab-item" data-tab="alphabetTab" onclick="window.showTab('alphabetTab')">Huruf</button>
-        <button class="tab-item" data-tab="numbersTab" onclick="window.showTab('numbersTab')">Angka</button>
-        <button class="tab-item" data-tab="wordsTab" onclick="window.showTab('wordsTab')">Kata</button>
-        <button class="tab-item" data-tab="sentencesTab" onclick="window.showTab('sentencesTab')">Kalimat</button>
-        <button class="tab-item" data-tab="breathTab" onclick="window.showTab('breathTab')">Napas</button>
-    </div>
-
     <div class="tabs-wrapper">
 
         <!-- ─── VOKAL (A-I-U-E-O) ─────────── -->
@@ -147,8 +138,12 @@
     <div class="fs-main-row">
         <button class="fs-nav-btn" id="fsPrevBtn" onclick="window.prevFs()" aria-label="Sebelumnya">←</button>
         <div class="fs-char-wrap" onclick="window.fsPlaySound()">
+            <!-- Spelling mode: suku kata berwarna -->
+            <div class="fs-spelling" id="fsSpelling"></div>
             <div class="fs-char" id="fsChar"></div>
             <div class="fs-label" id="fsLabel"></div>
+            <!-- Info ejaan: ayam → a-yam -->
+            <div class="fs-spelling-info" id="fsSpellingInfo"></div>
             <!-- Ilustrasi mulut untuk vokal (A/I/U/E/O) -->
             <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" />
         </div>

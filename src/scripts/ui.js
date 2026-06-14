@@ -2,6 +2,7 @@
 import { speakText, TTS } from "./tts.js";
 import { openCamera, closeCamera } from "./camera.js";
 import { addProgress, updateProgress } from "./progress.js";
+import { getSyllables, getSpellingText } from "./syllable.js";
 
 /* ── SETTINGS POPUP ─────────────────────── */
 export function setupSettings() {
@@ -49,18 +50,22 @@ export function setupModeAndAccessibility() {
 export function setMode(mode) {
   localStorage.setItem("appMode", mode);
   const html = document.documentElement;
-  const btnAdult = document.getElementById("btnModeAdult");
-  const btnChild = document.getElementById("btnModeChild");
 
   if (mode === "child") {
     html.classList.add("mode-child");
-    btnAdult?.classList.remove("active");
-    btnChild?.classList.add("active");
+    html.classList.remove("mode-adult");
   } else {
     html.classList.remove("mode-child");
-    btnChild?.classList.remove("active");
-    btnAdult?.classList.add("active");
+    html.classList.add("mode-adult");
   }
+
+  // Sync semua tombol mode (settings + sidebar)
+  document.querySelectorAll(".btn-mode, .sidebar-mode-btn")
+    .forEach((btn) => {
+      const isAdult = btn.id?.includes("Adult") || btn.id?.includes("sbModeAdult");
+      const isTarget = mode === "adult" ? isAdult : !isAdult;
+      btn.classList.toggle("active", isTarget);
+    });
 }
 
 export function toggleContrast(forceState) {
@@ -101,8 +106,83 @@ export function updateFontSize(val) {
   }
 }
 
+/* ── SIDEBAR ────────────────────────────── */
+const SIDEBAR_STATE_KEY = "sidebarOpen";
+
+export function restoreSidebarState() {
+  // Hanya restore di mobile — desktop sidebar selalu visible
+  if (window.innerWidth >= 768) return;
+  if (localStorage.getItem(SIDEBAR_STATE_KEY) === "true") {
+    openSidebar();
+  }
+}
+
+export function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  const hamburger = document.getElementById("btnHamburger");
+  if (!sidebar) return;
+
+  const isOpen = sidebar.classList.contains("open");
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
+export function openSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  const hamburger = document.getElementById("btnHamburger");
+  if (!sidebar) return;
+  sidebar.classList.add("open");
+  if (overlay) overlay.classList.add("open");
+  if (hamburger) hamburger.classList.add("open");
+  localStorage.setItem(SIDEBAR_STATE_KEY, "true");
+  // Hanya lock scroll di mobile (sidebar overlay = drawer)
+  if (window.innerWidth < 768) {
+    document.body.style.overflow = "hidden";
+  }
+}
+
+export function closeSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  const hamburger = document.getElementById("btnHamburger");
+  if (!sidebar) return;
+  sidebar.classList.remove("open");
+  if (overlay) overlay.classList.remove("open");
+  if (hamburger) hamburger.classList.remove("open");
+  localStorage.setItem(SIDEBAR_STATE_KEY, "false");
+  document.body.style.overflow = "";
+}
+
+export function navToTab(tabId) {
+  closeSidebar();
+  showTab(tabId);
+}
+
+/** Highlight sidebar item yang aktif */
+function highlightSidebarItem(tabId) {
+  document.querySelectorAll(".sidebar-item").forEach((el) => {
+    el.classList.toggle("active", el.dataset.tab === tabId);
+  });
+}
+
+/* ── KEYBOARD: Escape to close sidebar ──── */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar && sidebar.classList.contains("open") && window.innerWidth < 768) {
+      closeSidebar();
+    }
+  }
+});
+
 /* ── TABS ───────────────────────────────── */
 export function showTab(tabId) {
+  highlightSidebarItem(tabId);
   document.querySelectorAll(".tab-content").forEach((el) => {
       el.classList.remove("active");
       el.style.display = "none";
@@ -155,6 +235,26 @@ export function cardTap(text, id, type) {
     if (type === "number") list = content.NUMBERS;
     else if (type === "alphabet") list = content.ALPHABET;
     else if (type === "vokal") list = content.VOKAL;
+    else if (type === "word") {
+      // Words in fullscreen = spelling mode
+      const wordList = window.__WORDS || [];
+      const item = wordList.find((i) => i.id === id);
+      if (item) {
+        // Skip multi-word (2 kata) untuk spelling — langsung play aja
+        if (item.text.includes(" ")) {
+          playTTS(item.text, id, "word");
+          return;
+        }
+        const syllables = getSyllables(item.text);
+        openFs(syllables.map((s, i) => ({
+          id: `${item.id}_s${i}`,
+          text: s,
+          fullWord: item.text,
+          isSyllable: true,
+        })), 0);
+        return;
+      }
+    }
     else return;
 
     const idx = list.findIndex((i) => i.id === id);
@@ -168,6 +268,26 @@ export function cardTapCustom(text, id) {
   const decodedText = decodeURIComponent(text);
   if ("vibrate" in navigator) navigator.vibrate(50);
   playTTS(decodedText, id, "custom");
+}
+
+/* ── SYLLABLE SPELLING HELPERS ──────────── */
+/** Speak word + per-suku-kata untuk spelling mode */
+export function fsSyllableSound() {
+  const item = fsList[fsIndex];
+  if (!item) return;
+  if (item.isSyllable) {
+    const fullWord = item.fullWord || fsCurrentText;
+    const syllables = getSyllables(fullWord);
+    const currentSyl = syllables[fsIndex];
+    
+    // Baca: kata utuh dulu, lalu suku kata spesifik
+    const textToSpeak = `${fullWord} — dieja: ${currentSyl}`;
+    speakText(textToSpeak, "id-ID");
+  } else {
+    speakText(fsList[fsIndex]?.text ?? fsCurrentText, "id-ID");
+  }
+  addProgress("alphabet");
+  updateProgress();
 }
 
 function openFs(list, idx) {
@@ -190,23 +310,58 @@ function renderFs() {
   const prevBtn = document.getElementById("fsPrevBtn");
   const nextBtn = document.getElementById("fsNextBtn");
   const mouthImg = document.getElementById("fsMouthImg");
+  const spellingEl = document.getElementById("fsSpelling");
+  const spellingInfo = document.getElementById("fsSpellingInfo");
 
-  if (charEl) charEl.textContent = item.text;
-  if (labelEl) labelEl.textContent = isNaN(Number(item.text)) ? "Huruf" : "Angka";
+  if (item.isSyllable && item.fullWord) {
+    // ─── SPELLING MODE ────────────────
+    const syllables = getSyllables(item.fullWord);
+    
+    // Tampilkan kata utuh dengan highlight suku kata aktif
+    if (spellingEl) {
+      spellingEl.innerHTML = syllables
+        .map((s, i) => `<span class="spelling-block ${i === fsIndex ? "active" : ""}" 
+          data-index="${i}">${s}</span>`)
+        .join("");
+      spellingEl.style.display = "flex";
+    }
+    
+    if (charEl) charEl.style.display = "none";
+    if (labelEl) {
+      labelEl.textContent = `Suku kata ${fsIndex + 1} dari ${syllables.length}`;
+      labelEl.style.marginTop = "0.5rem";
+    }
+    if (spellingInfo) {
+      spellingInfo.textContent = `${item.fullWord} → ${getSpellingText(item.fullWord)}`;
+      spellingInfo.style.display = "block";
+    }
+    if (mouthImg) mouthImg.classList.remove("show");
+  } else {
+    // ─── NORMAL MODE ──────────────────
+    if (charEl) {
+      charEl.textContent = item.text;
+      charEl.style.display = "block";
+    }
+    if (spellingEl) spellingEl.style.display = "none";
+    if (spellingInfo) spellingInfo.style.display = "none";
+    
+    if (labelEl) labelEl.textContent = isNaN(Number(item.text)) ? "Huruf" : "Angka";
+    
+    if (mouthImg) {
+      const vowels = ["A", "I", "U", "E", "O"];
+      if (vowels.includes(item.text.toUpperCase())) {
+        mouthImg.src = `/mouth/${item.text.toLowerCase()}.png`;
+        mouthImg.classList.add("show");
+      } else {
+        mouthImg.classList.remove("show");
+        mouthImg.src = "";
+      }
+    }
+  }
+
   if (counterEl) counterEl.textContent = `${fsIndex + 1} / ${fsList.length}`;
   if (prevBtn) prevBtn.disabled = fsIndex === 0;
   if (nextBtn) nextBtn.disabled = fsIndex === fsList.length - 1;
-
-  if (mouthImg) {
-    const vowels = ["A", "I", "U", "E", "O"];
-    if (vowels.includes(item.text.toUpperCase())) {
-      mouthImg.src = `/mouth/${item.text.toLowerCase()}.png`;
-      mouthImg.classList.add("show");
-    } else {
-      mouthImg.classList.remove("show");
-      mouthImg.src = "";
-    }
-  }
 }
 
 export function nextFs() {
@@ -231,7 +386,15 @@ export function closeFullscreen() {
 }
 
 export function fsPlaySound() {
-  speakText(fsList[fsIndex]?.text ?? fsCurrentText, "id-ID");
+  const item = fsList[fsIndex];
+  if (!item) {
+    speakText(fsCurrentText, "id-ID");
+  } else if (item.isSyllable && item.fullWord) {
+    fsSyllableSound();
+    return;
+  } else {
+    speakText(item.text, "id-ID");
+  }
   addProgress("alphabet");
   updateProgress();
 }
