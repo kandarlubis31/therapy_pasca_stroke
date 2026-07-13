@@ -25,7 +25,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="window.closeSidebar()"></div>
 
 <!-- ─── SIDEBAR DRAWER ─────────────────────── -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="Menu utama">
     <div class="sidebar-header">
         <div class="sidebar-brand">
             <span class="sidebar-brand-icon">🗣️</span>
@@ -37,33 +37,41 @@
         <button class="sidebar-close" onclick="window.closeSidebar()" aria-label="Tutup menu">✕</button>
     </div>
 
-    <nav class="sidebar-nav">
-        <button class="sidebar-item active" data-tab="vokalTab" onclick="window.navToTab('vokalTab')">
+    <nav class="sidebar-nav" aria-label="Navigasi latihan">
+        <button class="sidebar-item active" id="tab-vokal" data-tab="vokalTab" onclick="window.navToTab('vokalTab')" aria-current="page">
             <span class="sidebar-item-icon">🔊</span>
             <span class="sidebar-item-label">A-I-U-E-O</span>
         </button>
-        <button class="sidebar-item" data-tab="alphabetTab" onclick="window.navToTab('alphabetTab')">
+        <button class="sidebar-item" id="tab-alphabet" data-tab="alphabetTab" onclick="window.navToTab('alphabetTab')">
             <span class="sidebar-item-icon">🔤</span>
             <span class="sidebar-item-label">Huruf</span>
         </button>
-        <button class="sidebar-item" data-tab="numbersTab" onclick="window.navToTab('numbersTab')">
+        <button class="sidebar-item" id="tab-numbers" data-tab="numbersTab" onclick="window.navToTab('numbersTab')">
             <span class="sidebar-item-icon">🔢</span>
             <span class="sidebar-item-label">Angka</span>
         </button>
-        <button class="sidebar-item" data-tab="wordsTab" onclick="window.navToTab('wordsTab')">
+        <button class="sidebar-item" id="tab-words" data-tab="wordsTab" onclick="window.navToTab('wordsTab')">
             <span class="sidebar-item-icon">📖</span>
             <span class="sidebar-item-label">Kata</span>
         </button>
-        <button class="sidebar-item" data-tab="sentencesTab" onclick="window.navToTab('sentencesTab')">
+        <button class="sidebar-item" id="tab-sentences" data-tab="sentencesTab" onclick="window.navToTab('sentencesTab')">
             <span class="sidebar-item-icon">💬</span>
             <span class="sidebar-item-label">Kalimat</span>
         </button>
-        <button class="sidebar-item" data-tab="breathTab" onclick="window.navToTab('breathTab')">
+        <button class="sidebar-item" id="tab-breath" data-tab="breathTab" onclick="window.navToTab('breathTab')">
             <span class="sidebar-item-icon">🫁</span>
             <span class="sidebar-item-label">Napas</span>
         </button>
+        <button class="sidebar-item" id="tab-oralMotor" data-tab="oralMotorTab" onclick="window.navToTab('oralMotorTab')">
+            <span class="sidebar-item-icon">💪</span>
+            <span class="sidebar-item-label">Fisik</span>
+        </button>
+        <button class="sidebar-item" id="tab-quiz" data-tab="quizTab" onclick="window.navToTab('quizTab')">
+            <span class="sidebar-item-icon">🧠</span>
+            <span class="sidebar-item-label">Kuis</span>
+        </button>
         <div class="sidebar-divider"></div>
-        <button class="sidebar-item" data-tab="customTab" onclick="window.navToTab('customTab')">
+        <button class="sidebar-item" id="tab-custom" data-tab="customTab" onclick="window.navToTab('customTab')">
             <span class="sidebar-item-icon">⭐</span>
             <span class="sidebar-item-label">Kartu Kustom</span>
         </button>
@@ -85,7 +93,7 @@
     </div>
 </aside>
 
-<div class="settings-popup" id="settingsPopup">
+<div class="settings-popup" id="settingsPopup" role="dialog" aria-label="Pengaturan aplikasi">
 
     <label>Pilih Suara</label>
     <p class="voice-hint">♀️ perempuan · ♂️ laki-laki · ✦ suara cloud (lebih jernih)</p>
@@ -127,6 +135,20 @@
         <button class="btn-mode active" id="btnModeAdult" onclick="window.setMode('adult')">🏥 Dewasa</button>
         <button class="btn-mode" id="btnModeChild" onclick="window.setMode('child')">🎈 Anak</button>
     </div>
+
+    <label>Sisi Tubuh yang Lemah</label>
+    <p class="voice-hint">Digunakan untuk petunjuk latihan fisik (tangan/kaki).</p>
+    <div class="settings-mode-row">
+        <button class="btn-side active" id="btnSideKanan" onclick="window.setAffectedSide('kanan')">🫱 Kanan</button>
+        <button class="btn-side" id="btnSideKiri" onclick="window.setAffectedSide('kiri')">🫲 Kiri</button>
+    </div>
+
+    <label>Isyarat Audio</label>
+    <p class="voice-hint">Bip setiap ganti fase latihan (tahan, istirahat, selesai).</p>
+    <button class="btn-toggle-row" id="btnAudioCues" onclick="window.setAudioCuesEnabled(!window.isAudioCuesEnabled())">
+        <span>🔔 Isyarat Audio</span>
+        <span class="toggle-pill" id="audioCuesPill">ON</span>
+    </button>
 
     <label>Aksesibilitas Visual</label>
     <button class="btn-toggle-row" id="btnContrast" onclick="window.toggleContrast()">

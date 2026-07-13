@@ -5,7 +5,7 @@
     <div class="tabs-wrapper">
 
         <!-- ─── VOKAL (A-I-U-E-O) ─────────── -->
-        <div id="vokalTab" class="tab-content active">
+        <div id="vokalTab" class="tab-content active" role="tabpanel" aria-labelledby="tab-vokal">
             <div class="content-header">
                 <div class="content-header-row">
                     <div>
@@ -21,11 +21,13 @@
                     </div>
                 </div>
             </div>
-            <div class="grid-alpha" id="vokalGrid"></div>
+            <div class="grid-alpha" id="vokalGrid" aria-busy="true" aria-label="Memuat huruf vokal...">
+                <span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span>
+            </div>
         </div>
 
         <!-- ─── HURUF ─────────────────────── -->
-        <div id="alphabetTab" class="tab-content">
+        <div id="alphabetTab" class="tab-content" role="tabpanel" aria-labelledby="tab-alphabet">
             <div class="content-header">
                 <div class="content-header-row">
                     <div>
@@ -41,11 +43,13 @@
                     </div>
                 </div>
             </div>
-            <div class="grid-alpha" id="alphabetGrid"></div>
+            <div class="grid-alpha" id="alphabetGrid" aria-busy="true" aria-label="Memuat huruf...">
+                <span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span>
+            </div>
         </div>
 
         <!-- ─── ANGKA ─────────────────────── -->
-        <div id="numbersTab" class="tab-content">
+        <div id="numbersTab" class="tab-content" role="tabpanel" aria-labelledby="tab-numbers">
             <div class="content-header">
                 <div class="content-header-row">
                     <div>
@@ -61,29 +65,64 @@
                     </div>
                 </div>
             </div>
-            <div class="grid-alpha" id="numbersGrid"></div>
+            <div class="grid-alpha" id="numbersGrid" aria-busy="true" aria-label="Memuat angka...">
+                <span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span>
+            </div>
         </div>
 
         <!-- ─── KATA ──────────────────────── -->
-        <div id="wordsTab" class="tab-content">
+        <div id="wordsTab" class="tab-content" role="tabpanel" aria-labelledby="tab-words">
             <div class="content-header">
-                <h2 class="content-title">Kosa Kata</h2>
-                <p class="content-subtitle">Perhatikan dan dengarkan.</p>
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Kosa Kata</h2>
+                        <p class="content-subtitle">Ketuk kartu untuk dengar pengucapan & lihat ejaan.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                        <button class="btn-fs-toggle" onclick="window.toggleFsMode()">
+                            <span class="btn-fs-icon">⛶</span>
+                            <span class="btn-fs-label">Mode Penuh</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div id="wordsGrid"></div>
+            <!-- Filter Kategori -->
+            <div class="word-filter-bar" id="wordFilterBar"></div>
+            <!-- Grid Kata -->
+            <div id="wordsGrid" aria-busy="true" aria-label="Memuat kosa kata...">
+                <div class="grid-words">
+                    <span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span><span class="skeleton skeleton-card" aria-hidden="true"></span>
+                </div>
+            </div>
         </div>
 
         <!-- ─── KALIMAT ───────────────────── -->
-        <div id="sentencesTab" class="tab-content">
+        <div id="sentencesTab" class="tab-content" role="tabpanel" aria-labelledby="tab-sentences">
             <div class="content-header">
-                <h2 class="content-title">Menyusun Kalimat</h2>
-                <p class="content-subtitle">Latihan untuk kebutuhan sehari-hari.</p>
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Menyusun Kalimat</h2>
+                        <p class="content-subtitle">Latihan untuk kebutuhan sehari-hari.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                        <button class="btn-fs-toggle" onclick="window.toggleFsMode()">
+                            <span class="btn-fs-icon">⛶</span>
+                            <span class="btn-fs-label">Mode Penuh</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="sentence-list" id="sentencesList"></div>
+            <!-- Filter Grup -->
+            <div class="sentence-filter-bar" id="sentenceFilterBar"></div>
+            <div class="sentence-list" id="sentencesList" aria-busy="true" aria-label="Memuat kalimat...">
+                <span class="skeleton skeleton-sentence" aria-hidden="true"></span><span class="skeleton skeleton-sentence" aria-hidden="true"></span><span class="skeleton skeleton-sentence" aria-hidden="true"></span>
+            </div>
         </div>
 
         <!-- ─── NAPAS ─────────────────────── -->
-        <div id="breathTab" class="tab-content">
+        <div id="breathTab" class="tab-content" role="tabpanel" aria-labelledby="tab-breath">
             <div class="content-header">
                 <h2 class="content-title">Latihan Napas</h2>
                 <p class="content-subtitle">Ikuti panduan visual sebelum mulai berbicara.</p>
@@ -96,8 +135,34 @@
             </div>
         </div>
 
+        <!-- ─── KUIS ──────────────────────── -->
+        <div id="quizTab" class="tab-content" role="tabpanel" aria-labelledby="tab-quiz">
+            <div class="content-header">
+                <h2 class="content-title">Latihan Kuis</h2>
+                <p class="content-subtitle">Uji pemahaman dengan kuis interaktif.</p>
+            </div>
+            <div id="quizContainer"></div>
+        </div>
+
+        <!-- ─── LATIHAN FISIK ────────────── -->
+        <div id="oralMotorTab" class="tab-content" role="tabpanel" aria-labelledby="tab-oralMotor">
+            <div class="content-header">
+                <div class="content-header-row">
+                    <div>
+                        <h2 class="content-title">Latihan Fisik</h2>
+                        <p class="content-subtitle">Latihan otot mulut, tangan, kaki, & keseimbangan untuk pemulihan.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
+                    </div>
+                </div>
+            </div>
+            <div id="oralMotorList"></div>
+            <div id="oralMotorActive"></div>
+        </div>
+
         <!-- ─── KUSTOM ────────────────────── -->
-        <div id="customTab" class="tab-content">
+        <div id="customTab" class="tab-content" role="tabpanel" aria-labelledby="tab-custom">
             <div class="content-header">
                 <div class="content-header-row">
                     <div>
@@ -145,7 +210,7 @@
             <!-- Info ejaan: ayam → a-yam -->
             <div class="fs-spelling-info" id="fsSpellingInfo"></div>
             <!-- Ilustrasi mulut untuk vokal (A/I/U/E/O) -->
-            <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" />
+            <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" loading="lazy" decoding="async" />
         </div>
         <button class="fs-nav-btn" id="fsNextBtn" onclick="window.nextFs()" aria-label="Berikutnya">→</button>
     </div>
@@ -163,6 +228,7 @@
                 oninput="document.getElementById('fsSpeedVal').textContent=this.value+'s'; window.setAutoplaySpeed(parseFloat(this.value))">
         </div>
         <button class="fs-play-btn" onclick="window.fsPlaySound()">Dengarkan Lagi</button>
+        <button class="fs-play-btn" onclick="window.nextFs()">Kata Selanjutnya</button>
     </div>
 </div>
 
@@ -181,13 +247,15 @@
     </div>
 </div>
 
-<!-- ─── CAMERA OVERLAY (DRAGGABLE) ────────── -->
+<!-- ─── CAMERA OVERLAY (DRAGGABLE + FULLSCREEN MIRROR) ── -->
 <div class="camera-overlay" id="cameraOverlay">
     <div class="camera-header">
         <span class="camera-title">Cermin Kamera</span>
-        <button class="camera-close" onclick="window.closeCamera()">✕</button>
+        <div class="camera-header-actions">
+            <button class="camera-expand" onclick="window.toggleMirrorFullscreen()" title="Perbesar ke mode cermin penuh">⛶</button>
+            <button class="camera-close" onclick="window.closeCamera()">✕</button>
+        </div>
     </div>
-    <!-- FIX: tambah autoplay biar stream langsung jalan -->
     <video id="cameraVideo" autoplay playsinline></video>
-    <div class="camera-hint">Geser ke atas untuk menutup</div>
+    <div class="camera-hint" id="cameraHint">Geser untuk pindahkan · Ketuk ⛶ untuk mode cermin</div>
 </div>

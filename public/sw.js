@@ -1,31 +1,29 @@
 /**
  * sw.js — Service Worker for PulihBicara PWA
  *
- * Strategy: Cache-first for static assets, network-first for dynamic content.
- * On install: precache core static assets.
- * On fetch: serve from cache if available, otherwise fetch from network.
+ * Strategy: Aggressive caching for full offline support.
+ * - Static assets (JS/CSS/images/fonts): Cache-first (hashed by Vite)
+ * - HTML navigations: Network-first, fallback to cache
+ * - Mouth images & third-party fonts: Stale-while-revalidate
+ * - Everything else: Network-first with offline fallback
  */
 
-const CACHE_NAME = "pulihbicara-v1";
+const CACHE_NAME = "pulihbicara-v3";
 
-// Assets to precache on install
-const PRECACHE_URLS = [
-  "/",
-  "/favicon.svg",
-  "/favicon.ico",
-];
-
-// Install event: precache core assets
+// ── Install: precache app shell ──────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
+      return cache.addAll([
+        "/",
+        "/manifest.json",
+      ]).catch(err => console.warn("SW precache partial:", err));
     })
   );
   self.skipWaiting();
 });
 
-// Activate event: clean old caches
+// ── Activate: clean old caches + claim clients ──
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -39,41 +37,58 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch event: cache-first for static, network-first for everything else
+// ── Fetch: routing logic ─────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
+  // Skip non-GET
   if (request.method !== "GET") return;
-
-  // Skip browser extensions and chrome-extension
+  // Skip non-http(s)
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
+  // Skip chrome-extension
+  if (url.origin.startsWith("chrome-extension")) return;
 
-  // For static assets (hashed by Vite), use cache-first
-  if (
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|webp|avif)$/)
-  ) {
+  // ── Same-origin static assets → Cache-first ──
+  if (url.origin === self.location.origin) {
+    // Hashed JS/CSS/fonts from Vite build
+    if (url.pathname.match(/\.(js|css|woff2?|ttf|eot)$/)) {
+      event.respondWith(cacheFirst(request));
+      return;
+    }
+    // Mouth images → stale-while-revalidate (MUST come before generic image check)
+    if (url.pathname.startsWith("/mouth/")) {
+      event.respondWith(staleWhileRevalidate(request));
+      return;
+    }
+    // Images & media
+    if (url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|avif)$/)) {
+      event.respondWith(cacheFirst(request));
+      return;
+    }
+    // Icons directory
+    if (url.pathname.startsWith("/icons/")) {
+      event.respondWith(cacheFirst(request));
+      return;
+    }
+    // HTML navigations → network-first, fallback to cache
+    if (request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith(".html")) {
+      event.respondWith(networkFirst(request));
+      return;
+    }
+  }
+
+  // ── Third-party: Google Fonts → cache-first ──
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
     event.respondWith(cacheFirst(request));
     return;
   }
 
-  // For HTML pages and API calls, use network-first
-  if (url.pathname.match(/\.html$/) || url.pathname === "/" || url.pathname === "") {
-    event.respondWith(networkFirst(request));
-    return;
-  }
-
-  // For mouth images, cache-first
-  if (url.pathname.startsWith("/mouth/")) {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  // Everything else: network-first
+  // ── Everything else → network-first ──
   event.respondWith(networkFirst(request));
 });
 
+// ── Strategy: Cache First ────────────────
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
@@ -85,11 +100,13 @@ async function cacheFirst(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch (error) {
-    return new Response("Offline", { status: 503 });
+  } catch {
+    // Offline + not cached → return empty
+    return new Response("Offline", { status: 503, statusText: "Offline", headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 }
 
+// ── Strategy: Network First ──────────────
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
@@ -98,9 +115,29 @@ async function networkFirst(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch (error) {
+  } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    return new Response("Offline", { status: 503 });
+
+    // If navigating & offline → return cached "/" as fallback
+    if (request.mode === "navigate") {
+      const fallback = await caches.match("/");
+      if (fallback) return fallback;
+    }
+
+    return new Response("Offline", { status: 503, statusText: "Offline", headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
+}
+
+// ── Strategy: Stale While Revalidate ─────
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  const fetchPromise = fetch(request).then(response => {
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  }).catch(() => cached);
+
+  return cached ? Promise.resolve(cached) : fetchPromise;
 }
