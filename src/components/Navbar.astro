@@ -38,42 +38,91 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Navigasi latihan">
-        <button class="sidebar-item active" id="tab-vokal" data-tab="vokalTab" onclick="window.navToTab('vokalTab')" aria-current="page">
-            <span class="sidebar-item-icon">🔊</span>
-            <span class="sidebar-item-label">A-I-U-E-O</span>
-        </button>
-        <button class="sidebar-item" id="tab-alphabet" data-tab="alphabetTab" onclick="window.navToTab('alphabetTab')">
-            <span class="sidebar-item-icon">🔤</span>
-            <span class="sidebar-item-label">Huruf</span>
-        </button>
-        <button class="sidebar-item" id="tab-numbers" data-tab="numbersTab" onclick="window.navToTab('numbersTab')">
-            <span class="sidebar-item-icon">🔢</span>
-            <span class="sidebar-item-label">Angka</span>
-        </button>
-        <button class="sidebar-item" id="tab-words" data-tab="wordsTab" onclick="window.navToTab('wordsTab')">
-            <span class="sidebar-item-icon">📖</span>
-            <span class="sidebar-item-label">Kata</span>
-        </button>
-        <button class="sidebar-item" id="tab-sentences" data-tab="sentencesTab" onclick="window.navToTab('sentencesTab')">
-            <span class="sidebar-item-icon">💬</span>
-            <span class="sidebar-item-label">Kalimat</span>
-        </button>
-        <button class="sidebar-item" id="tab-breath" data-tab="breathTab" onclick="window.navToTab('breathTab')">
-            <span class="sidebar-item-icon">🫁</span>
-            <span class="sidebar-item-label">Napas</span>
-        </button>
-        <button class="sidebar-item" id="tab-oralMotor" data-tab="oralMotorTab" onclick="window.navToTab('oralMotorTab')">
-            <span class="sidebar-item-icon">💪</span>
-            <span class="sidebar-item-label">Fisik</span>
-        </button>
-        <button class="sidebar-item" id="tab-quiz" data-tab="quizTab" onclick="window.navToTab('quizTab')">
-            <span class="sidebar-item-icon">🧠</span>
-            <span class="sidebar-item-label">Kuis</span>
-        </button>
+        <!-- 🗣️ Bicara -->
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" onclick="this.parentElement.classList.toggle('expanded')" aria-expanded="true">
+                <span class="sidebar-group-icon">🗣️</span>
+                <span class="sidebar-group-label">Bicara</span>
+                <span class="sidebar-group-chevron">▾</span>
+            </button>
+            <div class="sidebar-group-items">
+                <button class="sidebar-item active" id="tab-vokal" data-tab="vokalTab" onclick="window.navToTab('vokalTab')" aria-current="page">
+                    <span class="sidebar-item-icon">🔊</span>
+                    <span class="sidebar-item-label">A-I-U-E-O</span>
+                </button>
+                <button class="sidebar-item" id="tab-alphabet" data-tab="alphabetTab" onclick="window.navToTab('alphabetTab')">
+                    <span class="sidebar-item-icon">🔤</span>
+                    <span class="sidebar-item-label">Huruf</span>
+                </button>
+                <button class="sidebar-item" id="tab-numbers" data-tab="numbersTab" onclick="window.navToTab('numbersTab')">
+                    <span class="sidebar-item-icon">🔢</span>
+                    <span class="sidebar-item-label">Angka</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📖 Kata & Kalimat -->
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" onclick="this.parentElement.classList.toggle('expanded')" aria-expanded="true">
+                <span class="sidebar-group-icon">📖</span>
+                <span class="sidebar-group-label">Kata & Kalimat</span>
+                <span class="sidebar-group-chevron">▾</span>
+            </button>
+            <div class="sidebar-group-items">
+                <button class="sidebar-item" id="tab-words" data-tab="wordsTab" onclick="window.navToTab('wordsTab')">
+                    <span class="sidebar-item-icon">📝</span>
+                    <span class="sidebar-item-label">Kosa Kata</span>
+                </button>
+                <button class="sidebar-item" id="tab-sentences" data-tab="sentencesTab" onclick="window.navToTab('sentencesTab')">
+                    <span class="sidebar-item-icon">💬</span>
+                    <span class="sidebar-item-label">Kalimat</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 💪 Latihan -->
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" onclick="this.parentElement.classList.toggle('expanded')" aria-expanded="true">
+                <span class="sidebar-group-icon">💪</span>
+                <span class="sidebar-group-label">Latihan</span>
+                <span class="sidebar-group-chevron">▾</span>
+            </button>
+            <div class="sidebar-group-items">
+                <button class="sidebar-item" id="tab-breath" data-tab="breathTab" onclick="window.navToTab('breathTab')">
+                    <span class="sidebar-item-icon">🫁</span>
+                    <span class="sidebar-item-label">Napas</span>
+                </button>
+                <button class="sidebar-item" id="tab-oralMotor" data-tab="oralMotorTab" onclick="window.navToTab('oralMotorTab')">
+                    <span class="sidebar-item-icon">🏋️</span>
+                    <span class="sidebar-item-label">Fisik</span>
+                </button>
+                <button class="sidebar-item" id="tab-quiz" data-tab="quizTab" onclick="window.navToTab('quizTab')">
+                    <span class="sidebar-item-icon">🧠</span>
+                    <span class="sidebar-item-label">Kuis</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ⭐ Kustom -->
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" onclick="this.parentElement.classList.toggle('expanded')" aria-expanded="true">
+                <span class="sidebar-group-icon">⭐</span>
+                <span class="sidebar-group-label">Kustom</span>
+                <span class="sidebar-group-chevron">▾</span>
+            </button>
+            <div class="sidebar-group-items">
+                <button class="sidebar-item" id="tab-custom" data-tab="customTab" onclick="window.navToTab('customTab')">
+                    <span class="sidebar-item-icon">✨</span>
+                    <span class="sidebar-item-label">Kartu Kustom</span>
+                </button>
+            </div>
+        </div>
+
         <div class="sidebar-divider"></div>
-        <button class="sidebar-item" id="tab-custom" data-tab="customTab" onclick="window.navToTab('customTab')">
-            <span class="sidebar-item-icon">⭐</span>
-            <span class="sidebar-item-label">Kartu Kustom</span>
+
+        <button class="sidebar-item" id="sidebarSettings" onclick="window.closeSidebar();document.getElementById('btnSettings')?.click()">
+            <span class="sidebar-item-icon">⚙️</span>
+            <span class="sidebar-item-label">Pengaturan</span>
         </button>
     </nav>
 
@@ -154,6 +203,14 @@
     <button class="btn-toggle-row" id="btnContrast" onclick="window.toggleContrast()">
         <span>Kontras Tinggi</span>
         <span class="toggle-pill" id="contrastPill">OFF</span>
+    </button>
+    <button class="btn-toggle-row" id="btnReduceMotion" onclick="window.toggleReduceMotion()">
+        <span>Kurangi Gerakan</span>
+        <span class="toggle-pill" id="reduceMotionPill">OFF</span>
+    </button>
+    <button class="btn-toggle-row" id="btnDyslexicFont" onclick="window.toggleDyslexicFont()">
+        <span>Font Dyslexia</span>
+        <span class="toggle-pill" id="dyslexicFontPill">OFF</span>
     </button>
     
     <label>Ukuran Teks <span id="fsVal">Normal</span></label>

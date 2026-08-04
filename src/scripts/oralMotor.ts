@@ -6,7 +6,7 @@
  */
 
 import { ORO_MOTOR_EXERCISES, LIMB_EXERCISES, EXERCISE_GROUPS, EXERCISE_ICONS, EXERCISE_SUB_ICONS } from "../data/content.js";
-import { addProgress, updateProgress } from "./progress.js";
+import { addProgress, updateProgress, safeJSONParse } from "./progress.js";
 import { playPhaseCue, playCountdownTick } from "./audioCues.js";
 
 type ExerciseState = {
@@ -34,6 +34,12 @@ function findExercise(exId: string) {
   return ALL_EXERCISES.find(e => e.id === exId);
 }
 
+function chunkInstruction(text: string): string {
+  const parts = text.split(/\. (?=[A-Z])|, (?=[A-Za-z])|lalu /);
+  if (parts.length <= 1) return text;
+  return parts.map((p, i) => `<span class="om-step"><span class="om-step-num">${i + 1}.</span> ${p.trim().replace(/\.$/, '')}.</span>`).join('');
+}
+
 function getExerciseIcon(ex: typeof ALL_EXERCISES[number]): string {
   if ('muscle' in ex) return EXERCISE_SUB_ICONS[ex.muscle] || '💪';
   return EXERCISE_SUB_ICONS[ex.area] || '💪';
@@ -54,6 +60,7 @@ function getExerciseMotion(ex: typeof ALL_EXERCISES[number]): string {
 
 /* ── START GUIDED EXERCISE ────────────── */
 export function startOralMotorExercise(exId: string): void {
+  if ("vibrate" in navigator) navigator.vibrate(15);
   const exercise = findExercise(exId);
   if (!exercise) return;
 
@@ -69,6 +76,7 @@ export function startOralMotorExercise(exId: string): void {
 
 /* ── STOP ──────────────────────────────── */
 export function stopOralMotorExercise(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   stopTimer();
   state.exerciseId = null;
   const el = document.getElementById("oralMotorActive");
@@ -177,7 +185,7 @@ function renderExerciseUI(exercise: typeof ALL_EXERCISES[number]): void {
       </div>
       ` : `<div class="om-active-icon">${icon}</div>`}
       <h3 class="om-active-name">${exercise.name}</h3>
-      <p class="om-active-instruction">${exercise.instruction}</p>
+      <p class="om-active-instruction">${chunkInstruction(exercise.instruction)}</p>
       ${sideHint ? `<p class="om-active-side">${sideHint}</p>` : ''}
       ${assistedHint ? `<p class="om-active-assist">${assistedHint}</p>` : ''}
       <p class="om-active-safety">⚠️ Lakukan semampunya. Hentikan jika terasa nyeri.</p>
@@ -214,6 +222,43 @@ function renderExerciseUI(exercise: typeof ALL_EXERCISES[number]): void {
   }
 }
 
+/* ── EXERCISE FILTER STATE ──────────────── */
+let activeExerciseFilter: string | null = null;
+
+// Expose for onclick
+export function setExerciseFilter(group: string): void {
+  if ("vibrate" in navigator) navigator.vibrate(15);
+  activeExerciseFilter = (activeExerciseFilter === group) ? null : group;
+  document.querySelectorAll<HTMLButtonElement>('.om-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.group === activeExerciseFilter);
+  });
+  renderOralMotorList();
+}
+
+/* ── RENDER EXERCISE FILTER BAR ─────────── */
+function renderExerciseFilterBar(): string {
+  const ordered = EXERCISE_GROUPS.filter(g => {
+    if (g === "Otot Mulut") return ORO_MOTOR_EXERCISES.length > 0;
+    return LIMB_EXERCISES.some(e => e.area === g);
+  });
+
+  if (ordered.length <= 1) return '';
+
+  return `<div class="om-filter-bar">
+    <button class="om-filter-btn ${activeExerciseFilter === null ? 'active' : ''}" data-group="" onclick="window.setExerciseFilter('')">
+      <span class="om-filter-icon">📋</span>
+      <span class="om-filter-label">Semua</span>
+    </button>
+    ${ordered.map(g => {
+      const icon = EXERCISE_ICONS[g] || '💪';
+      return `<button class="om-filter-btn ${activeExerciseFilter === g ? 'active' : ''}" data-group="${g}" onclick="window.setExerciseFilter('${g}')">
+        <span class="om-filter-icon">${icon}</span>
+        <span class="om-filter-label">${g}</span>
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
 /* ── RENDER EXERCISE LIST ──────────────── */
 export function renderOralMotorList(): void {
   const container = document.getElementById("oralMotorList");
@@ -221,7 +266,7 @@ export function renderOralMotorList(): void {
 
   // Group ALL exercises by their group/area
   const groups: Record<string, typeof ALL_EXERCISES> = {};
-  
+
   // Oro-motor exercises → "Otot Mulut"
   ORO_MOTOR_EXERCISES.forEach(e => {
     const area = "Otot Mulut";
@@ -235,10 +280,10 @@ export function renderOralMotorList(): void {
     groups[e.area].push(e);
   });
 
-  const ordered = EXERCISE_GROUPS.filter(g => groups[g]);
-  const omProgress: Record<string, number> = JSON.parse(localStorage.getItem('oralMotorProgress') || '{}');
+  const ordered = EXERCISE_GROUPS.filter(g => groups[g] && (!activeExerciseFilter || activeExerciseFilter === g));
+  const omProgress = safeJSONParse<Record<string, number>>(localStorage.getItem('oralMotorProgress'), {});
 
-  container.innerHTML = ordered
+  container.innerHTML = renderExerciseFilterBar() + ordered
     .map((groupLabel: string) => {
       const exercises = groups[groupLabel];
       const groupIcon = EXERCISE_ICONS[groupLabel] || '💪';
@@ -268,6 +313,16 @@ export function renderOralMotorList(): void {
       `;
     })
     .join('');
+
+  // Update tab description based on filter
+  const subtitle = document.getElementById("oralMotorSubtitle");
+  if (subtitle) {
+    if (activeExerciseFilter) {
+      subtitle.textContent = `Menampilkan grup: ${activeExerciseFilter}`;
+    } else {
+      subtitle.textContent = "Latihan otot mulut, tangan, kaki, dan keseimbangan";
+    }
+  }
 }
 
 

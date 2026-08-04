@@ -362,12 +362,12 @@ export function createCancelToken(): SpeechCancelToken {
 
 /* ── MAPPING PENGUCAPAN ALFABET ──────────── */
 const ALPHABET_PRONUNCIATION: Record<string, string> = {
-  "A": "A", "B": "B", "C": "C", "D": "D", "E": "E",
-  "F": "F", "G": "G", "H": "H", "I": "I", "J": "J",
-  "K": "K", "L": "L", "M": "M", "N": "N", "O": "O",
-  "P": "P", "Q": "Q", "R": "R", "S": "S", "T": "T",
-  "U": "U", "V": "V", "W": "W", "X": "X", "Y": "Y",
-  "Z": "Z"
+  "A": "a", "B": "be", "C": "ce", "D": "de", "E": "e",
+  "F": "ef", "G": "ge", "H": "ha", "I": "i", "J": "je",
+  "K": "ka", "L": "el", "M": "em", "N": "en", "O": "o",
+  "P": "pe", "Q": "ki", "R": "er", "S": "es", "T": "te",
+  "U": "u", "V": "ve", "W": "we", "X": "eks", "Y": "ye",
+  "Z": "zet"
 };
 
 function isSingleLetter(text: string): boolean {

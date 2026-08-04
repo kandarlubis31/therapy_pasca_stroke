@@ -3,6 +3,7 @@ import { speakText, TTS, stopAllSpeech } from "./tts.js";
 import { openCamera, closeCamera } from "./camera.js";
 import { addProgress, updateProgress } from "./progress.js";
 import { getSyllables, getSpellingText } from "./syllable.js";
+import { isSpeechSupported, startSpeechMatch } from "./speech.js";
 import { loadAudioCuesSetting } from "./audioCues.js";
 
 // ── Types ─────────────────────────────────
@@ -78,6 +79,9 @@ export function setupModeAndAccessibility(): void {
   loadAffectedSide();
   loadAudioCuesSetting();
 
+  if (localStorage.getItem('reduceMotion') === 'true') toggleReduceMotion();
+  if (localStorage.getItem('dyslexicFont') === 'true') toggleDyslexicFont();
+
   const lsSlider = document.getElementById("letterSpacingSlider") as HTMLInputElement | null;
   const lhSlider = document.getElementById("lineHeightSlider") as HTMLInputElement | null;
   const fsSlider = document.getElementById("fontSizeSlider") as HTMLInputElement | null;
@@ -107,6 +111,24 @@ export function setMode(mode: string): void {
       const isTarget = mode === "adult" ? isAdult : !isAdult;
       btn.classList.toggle("active", isTarget);
     });
+}
+
+export function toggleReduceMotion(): void {
+  const html = document.documentElement;
+  const isOn = !html.classList.contains('reduce-motion');
+  html.classList.toggle('reduce-motion', isOn);
+  localStorage.setItem('reduceMotion', String(isOn));
+  const pill = document.getElementById('reduceMotionPill');
+  if (pill) { pill.textContent = isOn ? 'ON' : 'OFF'; pill.classList.toggle('on', isOn); }
+}
+
+export function toggleDyslexicFont(): void {
+  const html = document.documentElement;
+  const isOn = !html.classList.contains('dyslexic-font');
+  html.classList.toggle('dyslexic-font', isOn);
+  localStorage.setItem('dyslexicFont', String(isOn));
+  const pill = document.getElementById('dyslexicFontPill');
+  if (pill) { pill.textContent = isOn ? 'ON' : 'OFF'; pill.classList.toggle('on', isOn); }
 }
 
 export function toggleContrast(forceState?: boolean): void {
@@ -195,6 +217,7 @@ export function toggleSidebar(): void {
 }
 
 export function openSidebar(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("sidebarOverlay");
   const hamburger = document.getElementById("btnHamburger");
@@ -276,6 +299,9 @@ export function showTab(tabId: string, save = true): void {
     closeCamera();
   }
 
+  // Stop autoplay when switching away from fullscreen
+  if (isAutoplay) toggleAutoplay();
+
   if (tabId !== "breathTab" && isBreathing) {
     toggleBreath();
   }
@@ -284,12 +310,30 @@ export function showTab(tabId: string, save = true): void {
     (window as any).stopOralMotorExercise();
   }
 
-  if (tabId === "quizTab" && typeof window.renderQuizStart === 'function') {
-    window.renderQuizStart();
+  if (tabId === "quizTab") {
+    if (typeof window.renderQuizStart === 'function') {
+      window.renderQuizStart();
+    } else {
+      import("./quiz.js").then(m => {
+        window.renderQuizStart = m.renderQuizStart;
+        m.renderQuizStart();
+      });
+    }
   }
 
-  if (tabId === "oralMotorTab" && typeof window.renderOralMotorList === 'function') {
-    window.renderOralMotorList();
+  if (tabId === "oralMotorTab") {
+    if (typeof window.renderOralMotorList === 'function') {
+      window.renderOralMotorList();
+    } else {
+      import("./oralMotor.js").then(m => {
+        window.renderOralMotorList = m.renderOralMotorList;
+        window.startOralMotorExercise = m.startOralMotorExercise;
+        window.stopOralMotorExercise = m.stopOralMotorExercise;
+        window.rerenderActiveExercise = m.rerenderActiveExercise;
+        window.setExerciseFilter = m.setExerciseFilter;
+        m.renderOralMotorList();
+      });
+    }
   }
 }
 
@@ -308,6 +352,7 @@ let fsList: FsItem[] = [];
 export function isFsMode(): boolean { return fsMode; }
 
 export function toggleFsMode(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   fsMode = !fsMode;
   document.querySelectorAll<HTMLElement>(".btn-fs-toggle").forEach((btn) => {
     btn.classList.toggle("active", fsMode);
@@ -518,6 +563,7 @@ function renderFs(): void {
 }
 
 export function nextFs(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   if (fsIndex < fsList.length - 1) {
     fsIndex++;
     renderFs();
@@ -526,6 +572,7 @@ export function nextFs(): void {
 }
 
 export function prevFs(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   if (fsIndex > 0) {
     fsIndex--;
     renderFs();
@@ -534,6 +581,9 @@ export function prevFs(): void {
 }
 
 export function closeFullscreen(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
+  // Stop autoplay if running
+  if (isAutoplay) toggleAutoplay();
   document.getElementById("fsOverlay")?.classList.remove("show");
   stopAllSpeech();
   if (syllableAnimTimer) {
@@ -742,6 +792,7 @@ function startAutoplayTimer(): void {
 }
 
 export function toggleAutoplay(): void {
+  if ("vibrate" in navigator) navigator.vibrate(15);
   isAutoplay = !isAutoplay;
   const btn = document.getElementById("fsAutoplayBtn");
   if (btn) {
@@ -757,7 +808,34 @@ export function toggleAutoplay(): void {
   }
 }
 
+export function fsSpeechPractice(): void {
+  if (!isSpeechSupported()) {
+    const fb = document.getElementById('fsSpeechFeedback');
+    if (fb) { fb.style.display = 'block'; fb.textContent = '⚠️ Browser kamu belum mendukung latihan ucapan. Coba pakai Chrome ya.'; fb.className = 'fs-speech-feedback fs-fb-warn'; }
+    return;
+  }
+  const btn = document.getElementById('fsSpeechBtn');
+  const fb = document.getElementById('fsSpeechFeedback');
+  if (fb) { fb.style.display = 'block'; fb.textContent = '🎙️ Dengarkan... ucapkan kata yang muncul'; fb.className = 'fs-speech-feedback fs-fb-listen'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Dengar...'; }
+
+  startSpeechMatch(fsCurrentText, 'id-ID', (match, spoken) => {
+    if (btn) { btn.disabled = false; btn.textContent = '🎤 Ucapkan'; }
+    if (fb) {
+      if (match) {
+        fb.textContent = `✅ Bagus! "${spoken}" — tepat sekali!`;
+        fb.className = 'fs-speech-feedback fs-fb-success';
+      } else {
+        fb.textContent = `🔄 "${spoken}" — coba lagi ya, ucapkan "${fsCurrentText}"`;
+        fb.className = 'fs-speech-feedback fs-fb-retry';
+      }
+    }
+    if (match && 'vibrate' in navigator) navigator.vibrate([50, 50, 50]);
+  });
+}
+
 export function toggleLoop(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   isLoop = !isLoop;
   const btn = document.getElementById("fsLoopBtn");
   if (btn) {

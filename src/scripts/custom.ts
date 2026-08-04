@@ -24,24 +24,77 @@ export function loadCustomCards(): void {
 }
 
 /* ── MODAL ────────────────────────────── */
+let customModalTrigger: HTMLElement | null = null;
+
 export function openCustomModal(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
+  customModalTrigger = document.activeElement as HTMLElement | null;
   document.getElementById("customModal")?.classList.add("open");
+  document.body.style.overflow = "hidden";
+  // Focus the first input & reset preview
+  setTimeout(() => {
+    document.getElementById("customWordInput")?.focus();
+    updateCustomPreview();
+  }, 100);
 }
 
 export function closeCustomModal(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   document.getElementById("customModal")?.classList.remove("open");
+  document.body.style.overflow = "";
   const input = document.getElementById("customWordInput") as HTMLInputElement | null;
   const file = document.getElementById("customImageInput") as HTMLInputElement | null;
   if (input) input.value = "";
   if (file) file.value = "";
+  // Restore focus
+  if (customModalTrigger && typeof customModalTrigger.focus === "function") {
+    customModalTrigger.focus();
+    customModalTrigger = null;
+  }
 }
+
+/* ── FOCUS TRAP + ESCAPE: custom modal ───── */
+document.addEventListener("keydown", (e) => {
+  const modal = document.getElementById("customModal");
+  if (!modal?.classList.contains("open")) return;
+
+  // Escape → close
+  if (e.key === "Escape") {
+    closeCustomModal();
+    return;
+  }
+
+  // Tab → trap focus
+  if (e.key === "Tab") {
+    const focusable = modal.querySelectorAll<HTMLElement>(
+      'input, button, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+});
 
 /* ── SAVE ─────────────────────────────── */
 export function saveCustomCard(): void {
+  if ("vibrate" in navigator) navigator.vibrate(15);
   const input = document.getElementById("customWordInput") as HTMLInputElement | null;
   const fileInput = document.getElementById("customImageInput") as HTMLInputElement | null;
   if (!input || !input.value.trim()) {
-    alert("Masukkan kata terlebih dahulu");
+    alert("Tulis dulu kata yang ingin ditambahkan ya ✏️");
     return;
   }
 
@@ -66,12 +119,63 @@ export function saveCustomCard(): void {
 }
 
 /* ── DELETE ───────────────────────────── */
+let lastDeletedCard: CustomCard | null = null;
+let undoTimer: ReturnType<typeof setTimeout> | null = null;
+
 export function deleteCustomCard(id: string, e: Event): void {
+  if ("vibrate" in navigator) navigator.vibrate(20);
   e.stopPropagation();
-  if (!confirm("Hapus kartu ini?")) return;
+
+  const card = customCards.find(c => c.id === id);
+  if (!card) return;
+
+  // Save for undo
+  lastDeletedCard = card;
   customCards = customCards.filter((c) => c.id !== id);
   localStorage.setItem("customCards", JSON.stringify(customCards));
   renderCustomCards();
+
+  // Show undo toast
+  showUndoToast(card.text);
+}
+
+function showUndoToast(cardName: string): void {
+  // Remove any existing toast
+  const existing = document.querySelector('.undo-toast');
+  if (existing) existing.remove();
+  if (undoTimer) clearTimeout(undoTimer);
+
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.innerHTML = `
+    <span class="undo-toast-text">"${escapeHtml(cardName)}" dihapus</span>
+    <button class="undo-toast-btn" id="undoDeleteBtn">↩ Batal</button>
+  `;
+  document.body.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  toast.querySelector('#undoDeleteBtn')?.addEventListener('click', () => {
+    if (lastDeletedCard) {
+      customCards.push(lastDeletedCard);
+      localStorage.setItem("customCards", JSON.stringify(customCards));
+      lastDeletedCard = null;
+      renderCustomCards();
+    }
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+    if (undoTimer) clearTimeout(undoTimer);
+  });
+
+  // Auto-dismiss after 5s
+  undoTimer = setTimeout(() => {
+    lastDeletedCard = null;
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
 /* ── RENDER ───────────────────────────── */
@@ -110,3 +214,21 @@ function escapeHtml(str: string): string {
   div.textContent = str;
   return div.innerHTML;
 }
+
+function updateCustomPreview(): void {
+  const input = document.getElementById("customWordInput") as HTMLInputElement | null;
+  const preview = document.getElementById("customPreview");
+  if (!preview) return;
+  const text = input?.value?.trim() || '';
+  if (!text) {
+    preview.innerHTML = '<span class="custom-preview-hint">Pratinjau kartu akan muncul di sini</span>';
+  } else {
+    preview.innerHTML = `<div class="custom-card custom-card-preview">
+      <div style="height:70px;display:flex;align-items:center;justify-content:center;background:var(--primary-light);width:100%;border-radius:var(--radius-sm);color:var(--primary-teal);font-size:2rem;">📝</div>
+      <span class="custom-card-text">${escapeHtml(text)}</span>
+    </div>`;
+  }
+}
+
+// Expose for inline oninput in Tabs.astro
+(window as any).updateCustomPreview = updateCustomPreview;

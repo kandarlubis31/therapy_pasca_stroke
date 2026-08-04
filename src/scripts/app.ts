@@ -9,18 +9,23 @@ import { ALPHABET, WORDS, SENTENCES, NUMBERS, VOKAL, WORD_CATEGORY_ORDER, WORD_C
 
 import { setupVoices, setupSpeed, refreshVoices, normalizeText, setupPitch, applyTonePreset, restoreTone, getTonePresets } from "./tts.js";
 import { loadCustomCards, openCustomModal, closeCustomModal, saveCustomCard, deleteCustomCard } from "./custom.js";
-import { renderQuizStart } from "./quiz.js";
-import { renderOralMotorList, startOralMotorExercise, stopOralMotorExercise, rerenderActiveExercise } from "./oralMotor.js";
+// updateCustomPreview is called via window.updateCustomPreview from HTML oninput
+// quiz.js and oralMotor.js are dynamically imported in showTab() for code splitting
+import type { } from "./quiz.js";
+import type { } from "./oralMotor.js";
 import { playPhaseCue, playCountdownTick, setAudioCuesEnabled, isAudioCuesEnabled, initAudioCues } from "./audioCues.js";
 import { openCamera, closeCamera, toggleRecord, toggleMirrorFullscreen, openMirrorFullscreen, closeMirrorFullscreen } from "./camera.js";
-import { resetProgress, updateProgress } from "./progress.js";
+import { resetProgress, updateProgress, safeJSONParse, setupIdleEncouragement, getStaleWordCount } from "./progress.js";
 import {
   setupSettings,
   setupModeAndAccessibility,
   setMode,
   toggleContrast,
+  toggleReduceMotion,
+  toggleDyslexicFont,
   updateLetterSpacing,
   updateLineHeight,
+  updateFontSize,
   setAffectedSide,
   showTab,
   toggleFsMode,
@@ -33,6 +38,7 @@ import {
   toggleBreath,
   toggleAutoplay,
   toggleLoop,
+  fsSpeechPractice,
   setAutoplaySpeed,
   getAutoplaySpeed,
   setupSwipeAndKeyboard,
@@ -61,8 +67,11 @@ declare global {
     // Exposed functions
     setMode: typeof setMode;
     toggleContrast: typeof toggleContrast;
+    toggleReduceMotion: typeof toggleReduceMotion;
+    toggleDyslexicFont: typeof toggleDyslexicFont;
     updateLetterSpacing: typeof updateLetterSpacing;
     updateLineHeight: typeof updateLineHeight;
+    updateFontSize: typeof updateFontSize;
     setAffectedSide: typeof setAffectedSide;
     setAudioCuesEnabled: typeof setAudioCuesEnabled;
     isAudioCuesEnabled: typeof isAudioCuesEnabled;
@@ -82,6 +91,7 @@ declare global {
     toggleBreath: typeof toggleBreath;
     toggleAutoplay: typeof toggleAutoplay;
     toggleLoop: typeof toggleLoop;
+    fsSpeechPractice: typeof fsSpeechPractice;
     setAutoplaySpeed: typeof setAutoplaySpeed;
     getAutoplaySpeed: typeof getAutoplaySpeed;
     refreshVoices: typeof refreshVoices;
@@ -97,11 +107,14 @@ declare global {
     closeCustomModal: typeof closeCustomModal;
     saveCustomCard: typeof saveCustomCard;
     deleteCustomCard: typeof deleteCustomCard;
+    updateCustomPreview: () => void;
     renderQuizStart: typeof renderQuizStart;
     renderOralMotorList: typeof renderOralMotorList;
     startOralMotorExercise: typeof startOralMotorExercise;
     stopOralMotorExercise: typeof stopOralMotorExercise;
     rerenderActiveExercise: typeof rerenderActiveExercise;
+    setExerciseFilter: typeof setExerciseFilter;
+    updateStaleBadge: () => void;
     renderWordsGrid: () => void;
     renderSentencesList: () => void;
     setWordFilter: (cat: string) => void;
@@ -134,8 +147,11 @@ window.__SENTENCE_GROUP_ICONS = SENTENCE_GROUP_ICONS;
 // ── Expose all public functions on window for inline onclick handlers ──
 window.setMode = setMode;
 window.toggleContrast = toggleContrast;
+window.toggleReduceMotion = toggleReduceMotion;
+window.toggleDyslexicFont = toggleDyslexicFont;
 window.updateLetterSpacing = updateLetterSpacing;
 window.updateLineHeight = updateLineHeight;
+window.updateFontSize = updateFontSize;
 window.setAffectedSide = setAffectedSide;
 window.setAudioCuesEnabled = setAudioCuesEnabled;
 window.isAudioCuesEnabled = isAudioCuesEnabled;
@@ -155,6 +171,7 @@ window.fsPlaySound = fsPlaySound;
 window.toggleBreath = toggleBreath;
 window.toggleAutoplay = toggleAutoplay;
 window.toggleLoop = toggleLoop;
+window.fsSpeechPractice = fsSpeechPractice;
 window.setAutoplaySpeed = setAutoplaySpeed;
 window.getAutoplaySpeed = getAutoplaySpeed;
 window.refreshVoices = refreshVoices;
@@ -170,11 +187,8 @@ window.openCustomModal = openCustomModal;
 window.closeCustomModal = closeCustomModal;
 window.saveCustomCard = saveCustomCard;
 window.deleteCustomCard = deleteCustomCard;
-window.renderQuizStart = renderQuizStart;
-window.renderOralMotorList = renderOralMotorList;
-window.startOralMotorExercise = startOralMotorExercise;
-window.stopOralMotorExercise = stopOralMotorExercise;
-window.rerenderActiveExercise = rerenderActiveExercise;
+
+// Quiz & OralMotor loaded lazily via dynamic import in showTab()
 
 // ── EXPOSE FOR RESET ──────────────────────
 window.renderWordsGrid = renderWordsGrid;
@@ -183,21 +197,29 @@ window.renderSentencesList = renderSentencesList;
 // ── WORD FILTER STATE ─────────────────────
 let activeWordFilter: string | null = null;
 window.setWordFilter = function(cat: string): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   activeWordFilter = (activeWordFilter === cat) ? null : cat;
   document.querySelectorAll<HTMLButtonElement>('.word-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.cat === activeWordFilter);
   });
+  const grid = document.getElementById('wordsGrid');
+  if (grid) grid.setAttribute('aria-busy', 'true');
   renderWordsGrid();
+  if (grid) grid.removeAttribute('aria-busy');
 };
 
 // ── SENTENCE FILTER STATE ─────────────────
 let activeSentenceFilter: string | null = null;
 window.setSentenceFilter = function(group: string): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   activeSentenceFilter = (activeSentenceFilter === group) ? null : group;
   document.querySelectorAll<HTMLButtonElement>('.sentence-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.group === activeSentenceFilter);
   });
+  const list = document.getElementById('sentencesList');
+  if (list) list.setAttribute('aria-busy', 'true');
   renderSentencesList();
+  if (list) list.removeAttribute('aria-busy');
 };
 
 // ── INIT ─────────────────────────────────
@@ -237,6 +259,7 @@ function initApp(): void {
   restoreTone();
   initAudioCues();
   setupSwipeAndKeyboard();
+  setupIdleEncouragement();
   renderContent();
   loadCustomCards();
   updateProgress();
@@ -269,13 +292,15 @@ function renderContent(): void {
     el.removeAttribute('aria-label');
   };
 
+  let sIdx = 0;
   if (vokalGrid) {
     vokalGrid.innerHTML = VOKAL.map((i) =>
-      makeCard(i.id, i.text, "vokal", `<span class="alpha-main">${i.text}</span>`),
+      makeCard(i.id, i.text, "vokal", `<span class="alpha-main">${i.text}</span>`).replace('animation-delay:0s', `animation-delay:${(sIdx++) * 0.05}s`),
     ).join("");
     clearSkeleton(vokalGrid);
   }
 
+  sIdx = 0;
   if (alphaGrid) {
     alphaGrid.innerHTML = ALPHABET.map((i) =>
       makeCard(
@@ -283,14 +308,15 @@ function renderContent(): void {
         i.text,
         "alphabet",
         `<span class="alpha-main">${i.text}</span><span class="alpha-sub">${i.text.toLowerCase()}</span>`,
-      ),
+      ).replace('animation-delay:0s', `animation-delay:${(sIdx++) * 0.04}s`),
     ).join("");
     clearSkeleton(alphaGrid);
   }
 
+  sIdx = 0;
   if (numGrid) {
     numGrid.innerHTML = NUMBERS.map((i) =>
-      makeCard(i.id, i.text, "number", `<span class="alpha-main">${i.text}</span>`),
+      makeCard(i.id, i.text, "number", `<span class="alpha-main">${i.text}</span>`).replace('animation-delay:0s', `animation-delay:${(sIdx++) * 0.05}s`),
     ).join("");
     clearSkeleton(numGrid);
   }
@@ -306,6 +332,9 @@ function renderContent(): void {
     renderSentenceFilterBar();
     clearSkeleton(sentList);
   }
+
+  // Show stale word review badge
+  updateStaleBadge();
 }
 
 /* ── WORDS FILTER & RENDER ──────────────── */
@@ -345,7 +374,7 @@ function renderWordsGrid(): void {
   const orderedCats = WORD_CATEGORY_ORDER.filter(c => groups[c]);
   const catsToShow = activeWordFilter ? [activeWordFilter] : orderedCats;
 
-  const progress: Record<string, number> = JSON.parse(localStorage.getItem('wordProgress') || '{}');
+  const progress = safeJSONParse<Record<string, number>>(localStorage.getItem('wordProgress'), {});
   const totalByCat: Record<string, number> = {};
   const doneByCat: Record<string, number> = {};
   WORDS.forEach(w => {
@@ -378,7 +407,7 @@ function renderWordsGrid(): void {
           .map(i => {
             const isDone = progress[i.id];
             const delay = cardIdx++ * 0.04;
-            return `<button class="card word-card ${isDone ? 'done' : ''}" data-id="${i.id}" onclick="window.cardTap('${i.text}', '${i.id}', 'word')">
+            return `<button class="card word-card card-stagger ${isDone ? 'done' : ''}" data-id="${i.id}" onclick="window.cardTap('${i.text}', '${i.id}', 'word')" style="animation-delay:${delay}s">
               <span class="card-check" id="chk_${i.id}">\u2713</span>
               <span class="word-initial">${i.text.charAt(0)}</span>
               <span class="word-text">${i.text}</span>
@@ -416,6 +445,19 @@ function renderSentenceFilterBar(): void {
 }
 
 /* ── SENTENCES RENDER ───────────────────── */
+window.updateStaleBadge = function updateStaleBadge(): void {
+  const count = getStaleWordCount();
+  const badge = document.getElementById('staleBadge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = `💡 ${count} kata perlu diulang`;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
 function renderSentencesList(): void {
   const sentList = document.getElementById('sentencesList');
   if (!sentList) return;
@@ -429,7 +471,7 @@ function renderSentencesList(): void {
   const orderedGroups = SENTENCE_GROUP_ORDER.filter(g => groups[g]);
   const groupsToShow = activeSentenceFilter ? [activeSentenceFilter] : orderedGroups;
 
-  const sentProgress: Record<string, number> = JSON.parse(localStorage.getItem('sentenceProgress') || '{}');
+  const sentProgress: Record<string, number> = safeJSONParse(localStorage.getItem('sentenceProgress'), {});
 
   const totalByGroup: Record<string, number> = {};
   const doneByGroup: Record<string, number> = {};
@@ -460,7 +502,7 @@ function renderSentencesList(): void {
         </div>
         ${items.map((s, si) => {
           const isDone = sentProgress[s.id];
-          const escapedText = s.text.replace(/'/g, "\\'");
+          const escapedText = s.text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
           return `<div class="sentence-item ${isDone ? 'done' : ''}" data-id="${s.id}"
             onclick="window.cardTap('${escapedText}', '${s.id}', 'sentence')">
             <span class="card-check" id="chk_${s.id}">\u2713</span>

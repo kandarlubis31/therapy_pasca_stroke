@@ -1,173 +1,166 @@
-# therapy_pasca_stroke
+# 🗣️ PulihBicara — Terapi Wicara Pasca Stroke
 
 <div align="center">
 
-**nodeJS** · Bilingual Documentation / Dokumentasi Bilingual
+**Aplikasi terapi wicara untuk pemulihan pasca-stroke & belajar bicara anak**
 
-[🇮🇩 Indonesia](#indonesia) · [🇬🇧 English](#english)
+[![Astro](https://img.shields.io/badge/Astro-5.x-BC52EE)](https://astro.build)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)](https://typescriptlang.org)
+[![PWA](https://img.shields.io/badge/PWA-✅-5A0FC8)](https://web.dev/progressive-web-apps/)
+[![ICIL Score](https://img.shields.io/badge/ICIL%20Audit-A--%20(88%25)-4A827B)](docs/icil-audit.md)
 
 </div>
 
 ---
 
-<a name="indonesia"></a>
-## 🇮🇩 Indonesia
+## 🎯 Target Pengguna
 
-### Deskripsi
-
-therapy_pasca_stroke adalah aplikasi nodeJS yang dibangun menggunakan Astro, JavaScript, Node.js, TypeScript. Project ini dirancang untuk memberikan solusi praktis dan efisien.
-
-### Fitur Utama
-
-- Antarmuka pengguna yang intuitif dan responsif
-- Struktur kode yang terorganisir dan mudah dipelihara
-- Dokumentasi lengkap untuk instalasi dan penggunaan
-- Dibangun dengan teknologi modern dan best practices
-
-### Teknologi yang Digunakan
-
-- Astro
-- JavaScript
-- Node.js
-- TypeScript
-
-### Instalasi
-
-1. Clone repository ini
-   ```bash
-   git clone <repository-url>
-   ```
-2. Masuk ke direktori project
-   ```bash
-   cd therapy_pasca_stroke
-   ```
-3. Install dependencies
-   ```bash
-   npm install
-   ```
-4. Jalankan development server
-   ```bash
-   npm run dev
-   ```
-
-### Penggunaan
-
-Setelah instalasi selesai, ikuti langkah-langkah berikut untuk menggunakan aplikasi:
-
-1. Pastikan semua dependensi sudah terinstall dengan benar.
-2. Jalankan perintah sesuai dengan mode yang diinginkan (development/production).
-3. Buka browser atau aplikasi client sesuai dengan URL yang ditampilkan.
-
-### Variabel Lingkungan
-
-Jika project memerlukan file `.env`, salin dari `.env.example` dan sesuaikan:
-
-```bash
-cp .env.example .env
-```
-
-### Struktur Project
-
-```
-therapy_pasca_stroke/
-├── src/              # Source code utama
-├── public/           # Aset publik
-├── package.json      # Dependencies (Node.js)
-├── requirements.txt  # Dependencies (Python)
-├── composer.json     # Dependencies (PHP)
-└── README.md         # Dokumentasi project
-```
-
-### Kontribusi
-
-Kontribusi sangat terbuka! Silakan fork repository ini dan ajukan pull request.
-
-### Lisensi
-
-Project ini dilisensikan di bawah [MIT License](LICENSE).
+| 🧠 Pasca-Stroke | 👶 Anak Belajar Bicara |
+|---|---|
+| Mode **Dewasa** — teal calming | Mode **Anak** — pink playful |
+| Touch target 48px+ (tremor-friendly) | Font Nunito, kartu lucu |
+| Latihan artikulasi + napas + fisik | Vokal, huruf, kata dasar |
+| Speech recognition (ucapkan & bandingkan) | TTS playback |
 
 ---
 
-<a name="english"></a>
-## 🇬🇧 English
+## ✨ Fitur Utama
 
-### Description
+### 🗣️ Latihan Bicara
+- **Vokal A-I-U-E-O** — ilustrasi posisi mulut
+- **Huruf A-Z** — dengan contoh kata
+- **Angka 0-9**
+- **Kosa Kata** — 11 kategori (Keluarga, Makanan, Tubuh, dll.)
+- **Kalimat** — 7 grup (Salam, Kebutuhan Dasar, Tanya Jawab, dll.)
+- **Kartu Kustom** — tambah kata/foto sendiri + live preview
+- **Fullscreen Mode** — swipe navigasi, autoplay, loop
+- **Speech Recognition** 🎤 — ucapkan kata, app bandingkan
 
-therapy_pasca_stroke is a nodeJS application built using Astro, JavaScript, Node.js, TypeScript. This project is designed to provide a practical and efficient solution.
+### 💪 Latihan Fisik
+- **Otot Mulut** — 8 latihan (bibir, lidah, rahang, pipi)
+- **Tangan** — 5 latihan (bahu, lengan, jari, pergelangan)
+- **Kaki** — 4 latihan (lutut, pergelangan, jinjit)
+- **Keseimbangan** — 1 latihan
+- Timer terstruktur + audio cues + chunked instruksi step-by-step
+- Filter per grup latihan
 
-### Key Features
+### 🫁 Latihan Napas
+- Guided breathing (tarik → tahan → hembuskan)
+- Timer 4-4-4 detik
 
-- Intuitive and responsive user interface
-- Organized and maintainable code structure
-- Complete documentation for installation and usage
-- Built with modern technology and best practices
+### 🧠 Kuis Interaktif
+- Mode: Tebak Huruf, Tebak Kata
 
-### Tech Stack
-
-- Astro
-- JavaScript
-- Node.js
-- TypeScript
-
-### Installation
-
-1. Clone this repository
-   ```bash
-   git clone <repository-url>
-   ```
-2. Navigate to the project directory
-   ```bash
-   cd therapy_pasca_stroke
-   ```
-3. Install dependencies
-   ```bash
-   npm install
-   ```
-4. Run development server
-   ```bash
-   npm run dev
-   ```
-
-### Usage
-
-After installation, follow these steps to use the application:
-
-1. Make sure all dependencies are installed correctly.
-2. Run the command according to the desired mode (development/production).
-3. Open the browser or client app according to the displayed URL.
-
-### Environment Variables
-
-If the project requires an `.env` file, copy from `.env.example` and adjust:
-
-```bash
-cp .env.example .env
-```
-
-### Project Structure
-
-```
-therapy_pasca_stroke/
-├── src/              # Main source code
-├── public/           # Public assets
-├── package.json      # Dependencies (Node.js)
-├── requirements.txt  # Dependencies (Python)
-├── composer.json     # Dependencies (PHP)
-└── README.md         # Project documentation
-```
-
-### Contributing
-
-Contributions are welcome! Please fork this repository and submit a pull request.
-
-### License
-
-This project is licensed under the [MIT License](LICENSE).
+### 🎯 Tracking & Motivasi
+- Progress harian (target 20 latihan)
+- Milestone toast di 5, 10, 15
+- Reward modal di 20
+- Spaced repetition badge
+- Idle encouragement
+- 🤳 Cermin kamera (draggable + fullscreen mirror)
 
 ---
 
-<div align="center">
+## ♿ Aksesibilitas
 
-**Dibuat dengan ❤️ oleh Kandar Lubis**
+| Fitur | Status |
+|-------|--------|
+| Touch targets ≥48px | ✅ |
+| Focus trap semua modal | ✅ |
+| Skip link + ARIA announcer | ✅ |
+| Font scaling + letter spacing + line height | ✅ |
+| Kontras tinggi + dark mode | ✅ |
+| Reduce motion toggle | ✅ |
+| Dyslexic font (Atkinson Hyperlegible) | ✅ |
+| prefers-contrast + forced-colors | ✅ |
+| Screen reader support | ✅ |
+| Haptic feedback di 20+ interaksi | ✅ |
 
-</div>
+---
+
+## 📱 PWA Offline-First
+
+- Installable di Android/iOS
+- Service worker caching
+- Offline banner + screen reader announce
+- Safe area insets
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** [Astro 5.x](https://astro.build)
+- **Language:** TypeScript
+- **Styling:** CSS Custom Properties (design system)
+- **APIs:** Web Speech (TTS + STT), MediaDevices (kamera), Vibration
+- **Storage:** localStorage (client-only, no backend)
+
+---
+
+## 🚀 Instalasi
+
+```bash
+git clone https://github.com/kandarlubis31/therapy_pasca_stroke.git
+cd therapy_pasca_stroke
+npm install
+npm run dev     # → http://localhost:4321
+npm run build   # → dist/
+```
+
+---
+
+## 📂 Struktur Project
+
+```
+src/
+├── components/     # Navbar, Stats, Tabs (Astro)
+├── layouts/        # Layout.astro (PWA + CSP + offline detection)
+├── pages/          # index.astro
+├── scripts/        # TypeScript modules
+│   ├── app.ts          # Entry point + rendering
+│   ├── ui.ts           # Tabs, fullscreen, autoplay, sidebar
+│   ├── progress.ts     # Tracking, milestone, reward, idle, spaced rep
+│   ├── tts.ts          # Text-to-Speech engine
+│   ├── speech.ts       # Speech Recognition (STT)
+│   ├── quiz.ts         # Interactive quiz
+│   ├── oralMotor.ts    # Physical exercise timer
+│   ├── custom.ts       # Custom cards CRUD + undo toast
+│   ├── camera.ts       # Kamera mirror + recorder
+│   ├── audioCues.ts    # Phase audio cues
+│   └── syllable.ts     # Suku kata helper
+├── data/           # Content (kata, kalimat, latihan)
+├── styles/         # global.css (design system)
+public/
+├── sw.js           # Service Worker
+└── manifest.json   # PWA manifest
+docs/
+├── icil-audit.md       # ICIL multi-faculty audit
+├── PLAN.md             # Improvement plan (✅ complete)
+└── tracking-progress.md # Progress system docs
+```
+
+---
+
+## 📊 Skor ICIL Audit
+
+| Fakultas | Score |
+|----------|-------|
+| Aksesibilitas | A- (88%) |
+| Mobile UX | A- (87%) |
+| UX Psychology | A (90%) |
+| Animasi | A- (88%) |
+| Design Patterns | A- (87%) |
+| Performance | A- (88%) |
+| Conversational UI | A- (88%) |
+| Warna & Tipografi | A (92%) |
+| Security | A- (90%) |
+| Kognisi | A (90%) |
+| **Overall** | **A- (88%)** |
+
+> [Lihat audit lengkap →](docs/icil-audit.md)
+
+---
+
+## 📝 Lisensi
+
+MIT © 2026 [Kandar Lubis](https://github.com/kandarlubis31)

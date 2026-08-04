@@ -1,5 +1,5 @@
 /**
- * progress.ts — Progress tracking, stats bar, and reward system
+ * progress.ts — Progress tracking, stats bar, reward system, milestones, and spaced repetition
  */
 
 import { TTS } from "./tts.js";
@@ -25,11 +25,26 @@ const TYPE_MAP: Record<string, keyof ProgressData> = {
   oralMotor: "o",
 };
 
+const MILESTONES = [5, 10, 15];
+const MILESTONE_KEY = "milestonesSeen";
+
 /* ── PROGRESS & RESTART ─────────────────── */
 export function getProgress(): ProgressData {
-  return JSON.parse(
-    localStorage.getItem("progress") || '{"a":0,"w":0,"s":0,"c":0,"o":0}',
-  );
+  try {
+    return JSON.parse(
+      localStorage.getItem("progress") || '{"a":0,"w":0,"s":0,"c":0,"o":0}',
+    );
+  } catch {
+    return { a: 0, w: 0, s: 0, c: 0, o: 0 };
+  }
+}
+
+export function safeJSONParse<T>(raw: string | null, fallback: T): T {
+  try {
+    return JSON.parse(raw || (typeof fallback === 'string' ? fallback : JSON.stringify(fallback)));
+  } catch {
+    return fallback;
+  }
 }
 
 export function addProgress(type: string, id?: string): void {
@@ -41,19 +56,19 @@ export function addProgress(type: string, id?: string): void {
   }
 
   if (type === "word" && id) {
-    const wordProgress = JSON.parse(localStorage.getItem("wordProgress") || "{}");
+    const wordProgress = safeJSONParse<Record<string, number>>(localStorage.getItem("wordProgress"), {});
     wordProgress[id] = Date.now();
     localStorage.setItem("wordProgress", JSON.stringify(wordProgress));
   }
 
   if (type === "sentence" && id) {
-    const sentProgress = JSON.parse(localStorage.getItem("sentenceProgress") || "{}");
+    const sentProgress = safeJSONParse<Record<string, number>>(localStorage.getItem("sentenceProgress"), {});
     sentProgress[id] = Date.now();
     localStorage.setItem("sentenceProgress", JSON.stringify(sentProgress));
   }
 
   if (type === "oralMotor" && id) {
-    const omProgress = JSON.parse(localStorage.getItem("oralMotorProgress") || "{}");
+    const omProgress = safeJSONParse<Record<string, number>>(localStorage.getItem("oralMotorProgress"), {});
     omProgress[id] = (omProgress[id] || 0) + 1;
     localStorage.setItem("oralMotorProgress", JSON.stringify(omProgress));
   }
@@ -72,6 +87,7 @@ export function updateProgress(): void {
   set("statWords", p.w || 0);
   set("statSent", p.s || 0);
   set("statOralMotor", p.o || 0);
+  set("statCustom", p.c || 0);
   set("totalToday", total);
 
   const pct = Math.min(100, (total / 20) * 100);
@@ -82,15 +98,19 @@ export function updateProgress(): void {
   }
   set("progressText", `${total} / 20 latihan`);
 
+  checkMilestones(total);
   checkReward();
+  if (typeof (window as any).updateStaleBadge === 'function') (window as any).updateStaleBadge();
 }
 
 export function resetProgress(): void {
+  if ("vibrate" in navigator) navigator.vibrate(15);
   showResetConfirmModal(() => {
     localStorage.setItem("progress", '{"a":0,"w":0,"s":0,"c":0,"o":0}');
     localStorage.removeItem("wordProgress");
     localStorage.removeItem("sentenceProgress");
     localStorage.removeItem("oralMotorProgress");
+    localStorage.removeItem(MILESTONE_KEY);
     updateProgress();
     document
       .querySelectorAll(".card-check")
@@ -104,13 +124,66 @@ export function resetProgress(): void {
   });
 }
 
+/* ── SPACED REPETITION HELPER ─────────────── */
+export function getStaleWordCount(): number {
+  const wp = safeJSONParse<Record<string, number>>(localStorage.getItem("wordProgress"), {});
+  const now = Date.now();
+  const threeDays = 3 * 24 * 60 * 60 * 1000;
+  let count = 0;
+  for (const ts of Object.values(wp)) {
+    if (now - ts > threeDays) count++;
+  }
+  return count;
+}
+
+/* ── MILESTONE ENCOURAGEMENT ───────────────── */
+function checkMilestones(total: number): void {
+  const today = new Date().toDateString();
+  const seen = safeJSONParse<Record<string, string[]>>(localStorage.getItem(MILESTONE_KEY), {});
+
+  for (const m of MILESTONES) {
+    if (total >= m && (!seen[today] || !seen[today].includes(String(m)))) {
+      // Show milestone toast
+      showMilestoneToast(m);
+      // Mark as seen
+      if (!seen[today]) seen[today] = [];
+      seen[today].push(String(m));
+      localStorage.setItem(MILESTONE_KEY, JSON.stringify(seen));
+      break; // Only show one milestone at a time
+    }
+  }
+}
+
+function showMilestoneToast(count: number): void {
+  const messages: Record<number, string> = {
+    5: "Lima latihan! Awal yang bagus hari ini 🌱",
+    10: "Sepuluh latihan! Kamu hebat, teruskan! ⭐",
+    15: "Lima belas! Tinggal sedikit lagi mencapai target 🎯",
+  };
+  const msg = messages[count] || `Kamu sudah ${count} latihan!`;
+
+  const existing = document.querySelector('.milestone-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'milestone-toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.innerHTML = `<span>${msg}</span>`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
 /* ── RESET CONFIRMATION MODAL ────────────── */
 function showResetConfirmModal(onConfirm: () => void): void {
-  // Remove any existing confirm modal
   const existing = document.querySelector<HTMLDivElement>(".confirm-overlay");
   if (existing) existing.remove();
 
-  // Store trigger to restore focus, lock body scroll
   const triggerEl = document.activeElement as HTMLElement | null;
   const prevOverflow = document.body.style.overflow;
   document.body.style.overflow = "hidden";
@@ -148,32 +221,42 @@ function showResetConfirmModal(onConfirm: () => void): void {
   `;
 
   document.body.appendChild(overlay);
-  // Show immediately (no animation delay)
   overlay.classList.add("show");
 
-  // Focus the cancel button by default (safer option)
   const cancelBtn = overlay.querySelector<HTMLButtonElement>("#confirmCancelBtn");
   const resetBtn = overlay.querySelector<HTMLButtonElement>("#confirmResetBtn");
 
   setTimeout(() => cancelBtn?.focus(), 50);
 
-  // Click overlay background to cancel
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeModal();
   });
 
-  // Button handlers
   cancelBtn?.addEventListener("click", closeModal);
   resetBtn?.addEventListener("click", () => {
     closeModal();
     onConfirm();
   });
 
-  // Keyboard: Escape = cancel
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape") {
       closeModal();
       document.removeEventListener("keydown", onKey);
+      return;
+    }
+    if (e.key === "Tab") {
+      const focusable = overlay.querySelectorAll<HTMLElement>(
+        'button, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     }
   };
   document.addEventListener("keydown", onKey);
@@ -182,12 +265,8 @@ function showResetConfirmModal(onConfirm: () => void): void {
     overlay.classList.remove("show");
     overlay.remove();
     document.removeEventListener("keydown", onKey);
-    // Restore scroll
     document.body.style.overflow = prevOverflow;
-    // Restore focus to the trigger button
-    if (triggerEl && typeof triggerEl.focus === "function") {
-      triggerEl.focus();
-    }
+    if (triggerEl && typeof triggerEl.focus === "function") { triggerEl.focus(); }
   }
 }
 
@@ -206,25 +285,81 @@ function checkReward(): void {
 }
 
 function showRewardModal(): void {
-  let overlay = document.querySelector<HTMLDivElement>(".reward-overlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.className = "reward-overlay";
-    overlay.innerHTML = `
-      <div class="reward-modal">
-        <div class="reward-emoji">🎉</div>
-        <h3 class="reward-title">Hebat Sekali!</h3>
-        <p class="reward-subtitle">Anda telah menyelesaikan 20 latihan hari ini. Tetap semangat dan lanjutkan pemulihan Anda.</p>
-        <button class="btn-reward-close" onclick="this.closest('.reward-overlay')?.remove()">Terima Kasih</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  }
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  
+  const existing = document.querySelector<HTMLDivElement>(".reward-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "reward-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", "Selamat! Anda mencapai 20 latihan hari ini");
+  overlay.innerHTML = `
+    <div class="reward-modal">
+      <div class="reward-emoji">🎉</div>
+      <h3 class="reward-title">Hebat Sekali!</h3>
+      <p class="reward-subtitle">Kamu sudah menyelesaikan 20 latihan hari ini. Luar biasa! Tetap semangat ya 🌟</p>
+      <button class="btn-reward-close" id="btnRewardClose">Terima Kasih</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 
   setTimeout(() => overlay.classList.add("show"), 100);
 
+  const closeBtn = overlay.querySelector<HTMLButtonElement>("#btnRewardClose");
+  setTimeout(() => closeBtn?.focus(), 150);
+
+  function closeReward(): void {
+    overlay.classList.remove("show");
+    overlay.remove();
+    document.body.style.overflow = prevOverflow;
+    document.removeEventListener("keydown", rewardKeyHandler);
+  }
+
+  closeBtn?.addEventListener("click", closeReward);
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeReward();
+  });
+
+  function rewardKeyHandler(e: KeyboardEvent): void {
+    if (e.key === "Escape") { closeReward(); return; }
+    if (e.key === "Tab") { e.preventDefault(); closeBtn?.focus(); }
+  }
+  document.addEventListener("keydown", rewardKeyHandler);
+
   TTS.speak(
-    "Luar biasa! Anda telah menyelesaikan dua puluh latihan hari ini. Tetap semangat!",
+    "Luar biasa! Kamu sudah menyelesaikan dua puluh latihan hari ini. Kamu hebat!",
     "id-ID",
   );
+}
+
+/* ── IDLE ENCOURAGEMENT ────────────────────── */
+export function setupIdleEncouragement(): void {
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  const IDLE_MS = 120000; // 2 minutes
+
+  function resetTimer(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(showIdleToast, IDLE_MS);
+  }
+
+  function showIdleToast(): void {
+    const existing = document.querySelector('.idle-toast');
+    if (existing) return;
+    const toast = document.createElement('div');
+    toast.className = 'idle-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = '<span>Tidak apa-apa istirahat dulu ya 🌸</span><button class="idle-toast-close" onclick="this.parentElement.remove()">✕</button>';
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 5000);
+  }
+
+  ['click', 'touchstart', 'keydown', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, resetTimer, { passive: true });
+  });
+  resetTimer();
 }

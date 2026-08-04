@@ -76,7 +76,7 @@
                 <div class="content-header-row">
                     <div>
                         <h2 class="content-title">Kosa Kata</h2>
-                        <p class="content-subtitle">Ketuk kartu untuk dengar pengucapan & lihat ejaan.</p>
+                        <p class="content-subtitle">Ketuk kartu untuk dengar pengucapan & lihat ejaan. <span class="stale-badge" id="staleBadge" style="display:none"></span></p>
                     </div>
                     <div class="header-actions">
                         <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
@@ -150,7 +150,7 @@
                 <div class="content-header-row">
                     <div>
                         <h2 class="content-title">Latihan Fisik</h2>
-                        <p class="content-subtitle">Latihan otot mulut, tangan, kaki, & keseimbangan untuk pemulihan.</p>
+                        <p class="content-subtitle" id="oralMotorSubtitle">Latihan otot mulut, tangan, kaki, & keseimbangan untuk pemulihan.</p>
                     </div>
                     <div class="header-actions">
                         <button class="btn-icon-action" onclick="window.openCamera()" title="Buka Cermin Kamera">🪞</button>
@@ -210,7 +210,7 @@
             <!-- Info ejaan: ayam → a-yam -->
             <div class="fs-spelling-info" id="fsSpellingInfo"></div>
             <!-- Ilustrasi mulut untuk vokal (A/I/U/E/O) -->
-            <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" loading="lazy" decoding="async" />
+            <img class="fs-mouth-img" id="fsMouthImg" src="" alt="Posisi mulut" width="100" height="64" loading="lazy" decoding="async" />
         </div>
         <button class="fs-nav-btn" id="fsNextBtn" onclick="window.nextFs()" aria-label="Berikutnya">→</button>
     </div>
@@ -228,7 +228,11 @@
                 oninput="document.getElementById('fsSpeedVal').textContent=this.value+'s'; window.setAutoplaySpeed(parseFloat(this.value))">
         </div>
         <button class="fs-play-btn" onclick="window.fsPlaySound()">Dengarkan Lagi</button>
+        <button class="fs-play-btn" id="fsSpeechBtn" onclick="window.fsSpeechPractice()">🎤 Ucapkan</button>
         <button class="fs-play-btn" onclick="window.nextFs()">Kata Selanjutnya</button>
+    </div>
+    <!-- Speech feedback -->
+    <div class="fs-speech-feedback" id="fsSpeechFeedback" style="display:none"></div>
     </div>
 </div>
 
@@ -240,7 +244,10 @@
             <button class="modal-close" onclick="window.closeCustomModal()">✕</button>
         </div>
         <label class="modal-label">Kata atau Nama</label>
-        <input class="modal-input" id="customWordInput" type="text" placeholder="Masukkan kata...">
+        <input class="modal-input" id="customWordInput" type="text" placeholder="Masukkan kata..." oninput="window.updateCustomPreview?.()">
+        <div class="custom-preview" id="customPreview">
+            <span class="custom-preview-hint">Pratinjau kartu akan muncul di sini</span>
+        </div>
         <label class="modal-label">Foto (Opsional)</label>
         <input class="modal-file" id="customImageInput" type="file" accept="image/*">
         <button class="modal-save" onclick="window.saveCustomCard()">Simpan Kartu</button>

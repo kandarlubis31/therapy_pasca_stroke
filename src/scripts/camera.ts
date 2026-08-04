@@ -19,11 +19,12 @@ export async function openCamera(): Promise<void> {
     await video.play();
     overlay.classList.add("open");
   } catch {
-    alert("Gagal mengakses kamera. Pastikan browser memiliki izin dan situs menggunakan HTTPS.");
+    alert("Kamera belum bisa diakses. Coba buka Pengaturan browser > Izinkan Kamera, lalu buka lagi ya.");
   }
 }
 
 export function closeCamera(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   const overlay = document.getElementById("cameraOverlay");
   const video = document.getElementById("cameraVideo") as HTMLVideoElement | null;
 
@@ -38,6 +39,11 @@ export function closeCamera(): void {
   }
 
   if (video) video.srcObject = null;
+  // Cleanup recorder stream too
+  if (recorderStream) {
+    recorderStream.getTracks().forEach(t => t.stop());
+    recorderStream = null;
+  }
   if (overlay) {
     overlay.classList.remove("open");
     if ((window as any).__cameraResetPosition) (window as any).__cameraResetPosition();
@@ -48,6 +54,7 @@ export function closeCamera(): void {
 
 /** Toggle the camera overlay between small draggable and fullscreen mirror */
 export function toggleMirrorFullscreen(): void {
+  if ("vibrate" in navigator) navigator.vibrate(10);
   if (isMirrorFullscreen) {
     closeMirrorFullscreen();
   } else {
@@ -123,7 +130,10 @@ let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 let isRecording = false;
 
+let recorderStream: MediaStream | null = null;
+
 export async function toggleRecord(): Promise<void> {
+  if ("vibrate" in navigator) navigator.vibrate(15);
   const btn = document.getElementById("fsRecordBtn");
   const playbackBar = document.getElementById("fsRecorderBar");
   const audioEl = document.getElementById("fsAudioPlayback") as HTMLAudioElement | null;
@@ -142,10 +152,16 @@ export async function toggleRecord(): Promise<void> {
       if (audioEl) audioEl.src = audioUrl;
       if (playbackBar) playbackBar.style.display = "block";
       audioChunks = [];
+      // Cleanup stream tracks
+      if (recorderStream) {
+        recorderStream.getTracks().forEach(t => t.stop());
+        recorderStream = null;
+      }
     };
   } else {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorderStream = stream;
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.start();
       isRecording = true;
@@ -160,7 +176,7 @@ export async function toggleRecord(): Promise<void> {
         audioChunks.push(e.data);
       };
     } catch {
-      alert("Gagal merekam. Izinkan akses mikrofon di pengaturan browser Anda.");
+      alert("Mikrofon belum bisa dipakai. Coba izinkan akses mikrofon di pengaturan browser kamu.");
     }
   }
 }
