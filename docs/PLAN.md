@@ -2,7 +2,7 @@
 
 > **Audit basis:** ICIL v27 — 14+ fakultas
 > **Target user:** Pasien pasca-stroke (mode Dewasa) + Anak belajar bicara (mode Anak)
-> **Status:** ✅ **SELESAI** — 5 Agustus 2026
+> **Status:** 🔄 **UPDATED** — 6 Agustus 2026
 
 ---
 
@@ -33,7 +33,7 @@
 | ID | Item | Status |
 |----|------|--------|
 | PG1 | Voice & tone — reword semua error/alert casual Indonesia | ✅ |
-| N2 | Staggered card entrance — semua grid (vokal, huruf, angka, kata) | ✅ |
+| N2 | Staggered card entrance — semua grid | ✅ |
 | D4 | Filter button transitions | ✅ |
 | V2 | Card text line-height → 1.5 | ✅ |
 
@@ -48,6 +48,22 @@
 
 ---
 
+## ✅ Phase 5 — Bug Fixes & Hardening (6 Agustus 2026)
+
+| ID | Item | Status |
+|----|------|--------|
+| B1 | TTS: ganti keep-alive hack dgn chunked speaking | ✅ |
+| B2 | TTS: internal cancelToken + clearTimeout timer + putus zombie chunk | ✅ |
+| B3 | TTS: bersihkan double-finish last chunk | ✅ |
+| B4 | TTS: clearTimeout queue-mode polling timer | ✅ |
+| B5 | Vibrate guard: safeVibrate() utility + 26 call sites | ✅ |
+| B6 | Custom card: resizeImage canvas compression (max 600px, JPEG 0.7) | ✅ |
+| B7 | Custom card: validasi ukuran + storage cap 4MB + progress bar | ✅ |
+| B8 | Oral motor: guard timer leak + disable tombol saat hold/rest | ✅ |
+| B9 | Progress: hapus TTS ucapan selamat di reward modal | ✅ |
+
+---
+
 ## ✅ Sebelumnya Sudah Dikerjakan
 
 | ID | Item |
@@ -58,7 +74,7 @@
 | A5 | prefers-contrast + forced-colors |
 | M1 | Sidebar spacing tremor-friendly |
 | M2 | Grid gap 12px mobile |
-| M3 | Haptic feedback konsisten (20+ interaksi) |
+| M3 | Haptic feedback konsisten (26 interaksi) |
 | D1 | Body scroll lock modal |
 | D2 | aria-busy filter state |
 | D3 | Delete undo toast |
@@ -72,4 +88,4 @@
 
 ---
 
-> **Total:** 30+ improvements | **Build:** `astro build` — PASS ✅ | **5 Agustus 2026**
+> **Total:** 40+ improvements | **Build:** `astro build` — PASS ✅ | **6 Agustus 2026**

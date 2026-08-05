@@ -1,7 +1,7 @@
 # 📊 Dokumentasi Tracking Progress — PulihBicara
 
-> **Versi:** 1.0.0 | **Terakhir diperbarui:** 5 Agustus 2026
-> **File inti:** `src/scripts/progress.ts`, `src/scripts/speech.ts`
+> **Versi:** 1.1.0 | **Terakhir diperbarui:** 6 Agustus 2026
+> **File inti:** `src/scripts/progress.ts`, `src/scripts/tts.ts`, `src/scripts/custom.ts`, `src/scripts/vibrate.ts`
 
 ---
 
@@ -159,7 +159,7 @@ Muncul di subtitle tab Kata saat ada kata >3 hari belum dilatih.
 | 5 | Toast: "Lima latihan! Awal yang bagus 🌱" |
 | 10 | Toast: "Sepuluh latihan! Kamu hebat ⭐" |
 | 15 | Toast: "Lima belas! Tinggal sedikit 🎯" |
-| 20 | Modal: "Hebat Sekali! 🎉" + TTS selamat |
+| 20 | Modal: "Hebat Sekali! 🎉" (visual only, tanpa TTS) |
 
 Semua milestone **sekali per hari**.
 
@@ -231,3 +231,4 @@ Yang direset: `progress`, `wordProgress`, `sentenceProgress`, `oralMotorProgress
 
 > **Dibuat untuk:** PulihBicara — Terapi Wicara Pasca Stroke
 > **Dibuat oleh:** Buffy (AI Agent) — 5 Agustus 2026
+> **Diperbarui:** 6 Agustus 2026 — TTS chunked, vibrate guard, custom card validation & resize
