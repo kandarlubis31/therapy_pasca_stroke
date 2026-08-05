@@ -5,6 +5,7 @@ import { addProgress, updateProgress } from "./progress.js";
 import { getSyllables, getSpellingText } from "./syllable.js";
 import { isSpeechSupported, startSpeechMatch } from "./speech.js";
 import { loadAudioCuesSetting } from "./audioCues.js";
+import { safeVibrate } from "./vibrate.js";
 
 // ── Types ─────────────────────────────────
 interface FsItem {
@@ -217,7 +218,7 @@ export function toggleSidebar(): void {
 }
 
 export function openSidebar(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("sidebarOverlay");
   const hamburger = document.getElementById("btnHamburger");
@@ -244,7 +245,7 @@ export function closeSidebar(): void {
 }
 
 export function navToTab(tabId: string): void {
-  if ("vibrate" in navigator) navigator.vibrate(20);
+  safeVibrate(20);
   closeSidebar();
   showTab(tabId);
 }
@@ -352,7 +353,7 @@ let fsList: FsItem[] = [];
 export function isFsMode(): boolean { return fsMode; }
 
 export function toggleFsMode(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   fsMode = !fsMode;
   document.querySelectorAll<HTMLElement>(".btn-fs-toggle").forEach((btn) => {
     btn.classList.toggle("active", fsMode);
@@ -362,7 +363,7 @@ export function toggleFsMode(): void {
 }
 
 export function cardTap(text: string, id: string, type: TabType): void {
-  if ("vibrate" in navigator) navigator.vibrate(40);
+  safeVibrate(40);
   if (fsMode) {
     let list: FsItem[] | undefined;
     const content = __getContentData();
@@ -407,7 +408,7 @@ export function cardTap(text: string, id: string, type: TabType): void {
 
 export function cardTapCustom(text: string, id: string): void {
   const decodedText = decodeURIComponent(text);
-  if ("vibrate" in navigator) navigator.vibrate(40);
+  safeVibrate(40);
   playTTS(decodedText, id, "custom");
 }
 
@@ -563,7 +564,7 @@ function renderFs(): void {
 }
 
 export function nextFs(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   if (fsIndex < fsList.length - 1) {
     fsIndex++;
     renderFs();
@@ -572,7 +573,7 @@ export function nextFs(): void {
 }
 
 export function prevFs(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   if (fsIndex > 0) {
     fsIndex--;
     renderFs();
@@ -581,7 +582,7 @@ export function prevFs(): void {
 }
 
 export function closeFullscreen(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   // Stop autoplay if running
   if (isAutoplay) toggleAutoplay();
   document.getElementById("fsOverlay")?.classList.remove("show");
@@ -707,7 +708,7 @@ let breathInterval: ReturnType<typeof setInterval> | null = null;
 let isBreathing = false;
 
 export function toggleBreath(): void {
-  if ("vibrate" in navigator) navigator.vibrate(30);
+  safeVibrate(30);
   const btn = document.getElementById("btnBreath");
   const circle = document.getElementById("breathCircle");
   const text = document.getElementById("breathText");
@@ -792,7 +793,7 @@ function startAutoplayTimer(): void {
 }
 
 export function toggleAutoplay(): void {
-  if ("vibrate" in navigator) navigator.vibrate(15);
+  safeVibrate(15);
   isAutoplay = !isAutoplay;
   const btn = document.getElementById("fsAutoplayBtn");
   if (btn) {
@@ -830,12 +831,12 @@ export function fsSpeechPractice(): void {
         fb.className = 'fs-speech-feedback fs-fb-retry';
       }
     }
-    if (match && 'vibrate' in navigator) navigator.vibrate([50, 50, 50]);
+    if (match) safeVibrate([50, 50, 50]);
   });
 }
 
 export function toggleLoop(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   isLoop = !isLoop;
   const btn = document.getElementById("fsLoopBtn");
   if (btn) {
@@ -847,7 +848,7 @@ export function toggleLoop(): void {
 let chkTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function playTTS(text: string, id: string, type: TabType | "custom"): void {
-  if ("vibrate" in navigator) navigator.vibrate(30);
+  safeVibrate(30);
 
   document.querySelectorAll<HTMLElement>(".playing").forEach((el) => el.classList.remove("playing"));
 

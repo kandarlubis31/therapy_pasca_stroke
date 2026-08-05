@@ -50,6 +50,7 @@ let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentCancelToken: SpeechCancelToken | null = null;
 let speakingActive = false;
 let pendingSpeakTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingQueueTimer: ReturnType<typeof setTimeout> | null = null;
 
 /* ── TONE PRESETS ────────────────────────── */
 const TONE_PRESETS: Record<string, TonePreset> = {
@@ -136,6 +137,7 @@ export const TTS = {
       // Queue mode: wait for current to finish (max 30s timeout)
       const startedAt = Date.now();
       const checkAndSpeak = (): void => {
+        pendingQueueTimer = null;
         if (token.cancelled) return;
         if (Date.now() - startedAt > 30000) {
           // Timeout — force speak anyway
@@ -144,12 +146,12 @@ export const TTS = {
           return;
         }
         if (this.synth.speaking || this.synth.pending) {
-          setTimeout(checkAndSpeak, 80);
+          pendingQueueTimer = setTimeout(checkAndSpeak, 80);
           return;
         }
         doSpeak(text, lang, callback, token);
       };
-      setTimeout(checkAndSpeak, 80);
+      pendingQueueTimer = setTimeout(checkAndSpeak, 80);
       return;
     }
 
@@ -158,10 +160,14 @@ export const TTS = {
 
   /** Stop all speech immediately and clean up */
   stopAll(): void {
-    // Cancel pending doSpeak timer to prevent zombie speech
+    // Cancel pending timers to prevent zombie speech/polling
     if (pendingSpeakTimer !== null) {
       clearTimeout(pendingSpeakTimer);
       pendingSpeakTimer = null;
+    }
+    if (pendingQueueTimer !== null) {
+      clearTimeout(pendingQueueTimer);
+      pendingQueueTimer = null;
     }
     try {
       this.synth.cancel();

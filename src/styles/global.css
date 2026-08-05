@@ -1193,6 +1193,59 @@ html.dyslexic-font {
 }
 .undo-toast-btn:active { background: var(--primary-dark); }
 
+/* ─── SIZE ERROR TOAST ────────────────── */
+.size-error-toast {
+    position: fixed;
+    top: calc(var(--nav-height) + env(safe-area-inset-top) + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    z-index: 11000;
+    background: #FFF3E0;
+    color: #E65100;
+    border: 1.5px solid #FFCC80;
+    border-radius: var(--radius-pill);
+    padding: 0.6rem 1.2rem;
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.8rem;
+    box-shadow: var(--shadow-hover);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    max-width: calc(100vw - 2rem);
+}
+.size-error-toast.show { transform: translateX(-50%) translateY(0); }
+.size-error-toast.size-info { background: #E3F2FD; color: #1565C0; border-color: #90CAF9; }
+
+/* ─── CUSTOM STORAGE INFO BAR ─────────── */
+.custom-storage-info {
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.storage-info-text {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.storage-info-bar {
+    flex: 1;
+    min-width: 80px;
+    height: 5px;
+    background: var(--border-soft);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+.storage-info-fill {
+    height: 100%;
+    background: var(--primary-teal);
+    border-radius: var(--radius-pill);
+    transition: width 0.4s ease, background 0.3s ease;
+}
+.storage-info-fill.storage-warn { background: var(--accent-peach); }
+
 /* ─── MILESTONE + IDLE TOASTS ─────────── */
 .milestone-toast, .idle-toast {
     position: fixed;

@@ -2,6 +2,8 @@
  * camera.ts — Kamera (mirror) dan perekaman suara
  */
 
+import { safeVibrate } from "./vibrate.js";
+
 let cameraStream: MediaStream | null = null;
 let isMirrorFullscreen = false;
 let mirrorEscHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -24,7 +26,7 @@ export async function openCamera(): Promise<void> {
 }
 
 export function closeCamera(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   const overlay = document.getElementById("cameraOverlay");
   const video = document.getElementById("cameraVideo") as HTMLVideoElement | null;
 
@@ -54,7 +56,7 @@ export function closeCamera(): void {
 
 /** Toggle the camera overlay between small draggable and fullscreen mirror */
 export function toggleMirrorFullscreen(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   if (isMirrorFullscreen) {
     closeMirrorFullscreen();
   } else {
@@ -133,7 +135,7 @@ let isRecording = false;
 let recorderStream: MediaStream | null = null;
 
 export async function toggleRecord(): Promise<void> {
-  if ("vibrate" in navigator) navigator.vibrate(15);
+  safeVibrate(15);
   const btn = document.getElementById("fsRecordBtn");
   const playbackBar = document.getElementById("fsRecorderBar");
   const audioEl = document.getElementById("fsAudioPlayback") as HTMLAudioElement | null;

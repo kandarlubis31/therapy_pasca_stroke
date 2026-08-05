@@ -16,6 +16,7 @@ import type { } from "./oralMotor.js";
 import { playPhaseCue, playCountdownTick, setAudioCuesEnabled, isAudioCuesEnabled, initAudioCues } from "./audioCues.js";
 import { openCamera, closeCamera, toggleRecord, toggleMirrorFullscreen, openMirrorFullscreen, closeMirrorFullscreen } from "./camera.js";
 import { resetProgress, updateProgress, safeJSONParse, setupIdleEncouragement, getStaleWordCount } from "./progress.js";
+import { safeVibrate } from "./vibrate.js";
 import {
   setupSettings,
   setupModeAndAccessibility,
@@ -197,7 +198,7 @@ window.renderSentencesList = renderSentencesList;
 // ── WORD FILTER STATE ─────────────────────
 let activeWordFilter: string | null = null;
 window.setWordFilter = function(cat: string): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   activeWordFilter = (activeWordFilter === cat) ? null : cat;
   document.querySelectorAll<HTMLButtonElement>('.word-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.cat === activeWordFilter);
@@ -211,7 +212,7 @@ window.setWordFilter = function(cat: string): void {
 // ── SENTENCE FILTER STATE ─────────────────
 let activeSentenceFilter: string | null = null;
 window.setSentenceFilter = function(group: string): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   activeSentenceFilter = (activeSentenceFilter === group) ? null : group;
   document.querySelectorAll<HTMLButtonElement>('.sentence-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.group === activeSentenceFilter);

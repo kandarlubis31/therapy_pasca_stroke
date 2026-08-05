@@ -1,3 +1,5 @@
+import { safeVibrate } from "./vibrate.js";
+
 /**
  * progress.ts — Progress tracking, stats bar, reward system, milestones, and spaced repetition
  */
@@ -102,7 +104,7 @@ export function updateProgress(): void {
 }
 
 export function resetProgress(): void {
-  if ("vibrate" in navigator) navigator.vibrate(15);
+  safeVibrate(15);
   showResetConfirmModal(() => {
     localStorage.setItem("progress", '{"a":0,"w":0,"s":0,"c":0,"o":0}');
     localStorage.removeItem("wordProgress");

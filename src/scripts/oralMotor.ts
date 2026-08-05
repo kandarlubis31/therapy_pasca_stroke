@@ -8,6 +8,7 @@
 import { ORO_MOTOR_EXERCISES, LIMB_EXERCISES, EXERCISE_GROUPS, EXERCISE_ICONS, EXERCISE_SUB_ICONS } from "../data/content.js";
 import { addProgress, updateProgress, safeJSONParse } from "./progress.js";
 import { playPhaseCue, playCountdownTick } from "./audioCues.js";
+import { safeVibrate } from "./vibrate.js";
 
 type ExerciseState = {
   exerciseId: string | null;
@@ -60,7 +61,7 @@ function getExerciseMotion(ex: typeof ALL_EXERCISES[number]): string {
 
 /* ── START GUIDED EXERCISE ────────────── */
 export function startOralMotorExercise(exId: string): void {
-  if ("vibrate" in navigator) navigator.vibrate(15);
+  safeVibrate(15);
 
   // Guard: don't restart the same running exercise (prevents timer leak)
   const isRunning = state.exerciseId !== null && state.phase !== "done";
@@ -81,7 +82,7 @@ export function startOralMotorExercise(exId: string): void {
 
 /* ── STOP ──────────────────────────────── */
 export function stopOralMotorExercise(): void {
-  if ("vibrate" in navigator) navigator.vibrate(10);
+  safeVibrate(10);
   stopTimer();
   state.exerciseId = null;
   const el = document.getElementById("oralMotorActive");
@@ -235,7 +236,7 @@ let activeExerciseFilter: string | null = null;
 
 // Expose for onclick
 export function setExerciseFilter(group: string): void {
-  if ("vibrate" in navigator) navigator.vibrate(15);
+  safeVibrate(15);
   activeExerciseFilter = (activeExerciseFilter === group) ? null : group;
   document.querySelectorAll<HTMLButtonElement>('.om-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.group === activeExerciseFilter);
