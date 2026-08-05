@@ -49,6 +49,7 @@ let isPreWarmed = false;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentCancelToken: SpeechCancelToken | null = null;
 let speakingActive = false;
+let pendingSpeakTimer: ReturnType<typeof setTimeout> | null = null;
 
 /* ── TONE PRESETS ────────────────────────── */
 const TONE_PRESETS: Record<string, TonePreset> = {
@@ -123,6 +124,9 @@ export const TTS = {
       return;
     }
 
+    // Always have a cancel token so stopAll() can cancel even if caller didn't provide one
+    const token = cancelToken ?? { cancelled: false };
+
     // Pre-warm if not done yet
     if (!isPreWarmed) preWarm();
 
@@ -132,28 +136,33 @@ export const TTS = {
       // Queue mode: wait for current to finish (max 30s timeout)
       const startedAt = Date.now();
       const checkAndSpeak = (): void => {
-        if (cancelToken?.cancelled) return;
+        if (token.cancelled) return;
         if (Date.now() - startedAt > 30000) {
           // Timeout — force speak anyway
           TTS.synth.cancel();
-          setTimeout(() => doSpeak(text, lang, callback, cancelToken), 50);
+          pendingSpeakTimer = setTimeout(() => doSpeak(text, lang, callback, token), 50);
           return;
         }
         if (this.synth.speaking || this.synth.pending) {
           setTimeout(checkAndSpeak, 80);
           return;
         }
-        doSpeak(text, lang, callback, cancelToken);
+        doSpeak(text, lang, callback, token);
       };
       setTimeout(checkAndSpeak, 80);
       return;
     }
 
-    doSpeak(text, lang, callback, cancelToken);
+    doSpeak(text, lang, callback, token);
   },
 
   /** Stop all speech immediately and clean up */
   stopAll(): void {
+    // Cancel pending doSpeak timer to prevent zombie speech
+    if (pendingSpeakTimer !== null) {
+      clearTimeout(pendingSpeakTimer);
+      pendingSpeakTimer = null;
+    }
     try {
       this.synth.cancel();
     } catch { /* ignore */ }
@@ -218,7 +227,8 @@ function doSpeak(
 
   const totalWords = text.split(/\s+/).filter(Boolean).length;
 
-  setTimeout(() => {
+  pendingSpeakTimer = setTimeout(() => {
+    pendingSpeakTimer = null;
     if (cancelToken?.cancelled) return;
 
     // Long text → use chunked speaking to avoid Chrome 15s timeout
@@ -279,8 +289,10 @@ function speakSingle(
     if (cancelToken?.cancelled) return;
     if (e.error === "interrupted") {
       if (!TTS.synth.speaking) {
-        if (skipFinishCleanup) { if (callback) callback(); }
-        else finish(callback, cancelToken);
+        // Genuine interruption (user cancelled). Break the chain — don't
+        // advance to next chunk. Pass wasCancelled=true so the cancelToken
+        // gets flagged, preventing any pending chunk from continuing.
+        finish(skipFinishCleanup ? undefined : callback, cancelToken, true);
       }
       return;
     }
@@ -354,7 +366,8 @@ function speakChunked(
     const isLastChunk = chunkIndex === chunks.length - 1;
 
     // Intermediate chunks: skip finish() so audioVis & speakingActive stay alive.
-    // Final chunk: goes through normal finish() for full cleanup.
+    // Final chunk: speakSingle.onend already called finish(chunkCallback), which
+    // handles all cleanup. We just forward the original callback.
     speakSingle(
       chunkText,
       lang,
@@ -363,7 +376,7 @@ function speakChunked(
         chunkIndex++;
         wordOffset += chunkWords;
         if (isLastChunk) {
-          finish(callback, cancelToken);
+          if (callback) callback();
         } else {
           // Natural pause between chunks (shorter for comma splits)
           const delay = chunkText.endsWith(',') || chunkText.endsWith(';') ? 100 : 200;
