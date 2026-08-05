@@ -2,8 +2,6 @@
  * progress.ts — Progress tracking, stats bar, reward system, milestones, and spaced repetition
  */
 
-import { TTS } from "./tts.js";
-
 // ─── TYPES ──────────────────────────────
 export interface ProgressData {
   a: number;
@@ -330,10 +328,6 @@ function showRewardModal(): void {
   }
   document.addEventListener("keydown", rewardKeyHandler);
 
-  TTS.speak(
-    "Luar biasa! Kamu sudah menyelesaikan dua puluh latihan hari ini. Kamu hebat!",
-    "id-ID",
-  );
 }
 
 /* ── IDLE ENCOURAGEMENT ────────────────────── */

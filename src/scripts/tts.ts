@@ -3,7 +3,7 @@
  *
  * Features:
  * - Speech queue with interrupt / chain modes
- * - Chrome 15s keep-alive workaround (pause/resume heartbeat)
+ * - Chunked speaking for long texts (no more Chrome 15s bug)
  * - Word-boundary visual sync (audioVis bars react per word)
  * - Pre-warm on first user interaction (no more first-speech delay)
  * - onerror recovery with retry fallback
@@ -46,7 +46,6 @@ export let ttsPitch: number = parseFloat(localStorage.getItem("ttsPitch") ?? "1.
 export let voices: VoiceInfo[] = [];
 export let selectedVoiceURI: string = localStorage.getItem("ttsVoice") || "";
 let isPreWarmed = false;
-let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentCancelToken: SpeechCancelToken | null = null;
 let speakingActive = false;
@@ -160,7 +159,6 @@ export const TTS = {
     } catch { /* ignore */ }
     speakingActive = false;
     currentUtterance = null;
-    stopKeepAlive();
     if (currentCancelToken) {
       currentCancelToken.cancelled = true;
       currentCancelToken = null;
@@ -174,6 +172,38 @@ export const TTS = {
   },
 };
 
+// ─── TEXT SPLITTER ──────────────────────
+/** Pecah teks panjang menjadi chunk per kalimat/frasa (maks ~12 kata per chunk). */
+function splitIntoChunks(text: string): string[] {
+  // Split by sentence-ending punctuation
+  const raw = text.split(/(?<=[.!?])\s+/);
+  const chunks: string[] = [];
+
+  for (const part of raw) {
+    const words = part.split(/\s+/).filter(Boolean);
+    if (words.length <= 12) {
+      if (part.trim()) chunks.push(part.trim());
+    } else {
+      // Further split by comma / semicolon
+      const subs = part.split(/(?<=[,;])\s+/);
+      for (const sub of subs) {
+        const sw = sub.split(/\s+/).filter(Boolean);
+        if (sw.length <= 10) {
+          if (sub.trim()) chunks.push(sub.trim());
+        } else {
+          // Hard split every ~8 words
+          for (let i = 0; i < sw.length; i += 8) {
+            const c = sw.slice(i, i + 8).join(' ');
+            if (c) chunks.push(c);
+          }
+        }
+      }
+    }
+  }
+
+  return chunks.length > 0 ? chunks : [text];
+}
+
 // ─── CORE SPEECH LOGIC ──────────────────
 function doSpeak(
   text: string,
@@ -181,118 +211,181 @@ function doSpeak(
   callback?: () => void,
   cancelToken?: SpeechCancelToken,
 ): void {
-  // Race condition guard: if synth is in limbo, cancel first
+  // Race condition guard: flush any lingering synth state
   try {
     if (TTS.synth.speaking || TTS.synth.pending) TTS.synth.cancel();
   } catch { /* ignore */ }
 
+  const totalWords = text.split(/\s+/).filter(Boolean).length;
+
   setTimeout(() => {
     if (cancelToken?.cancelled) return;
 
-    // Kill any stray keep-alive from previous utterance
-    stopKeepAlive();
-
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = lang;
-    utt.volume = 0.85;
-    utt.rate = ttsRate;
-    utt.pitch = ttsPitch;
-
-    if (selectedVoiceURI) {
-      const voice = window.speechSynthesis.getVoices().find((v) => v.voiceURI === selectedVoiceURI);
-      if (voice) utt.voice = voice;
-    }
-
-    currentUtterance = utt;
-    currentCancelToken = cancelToken ?? null;
-    speakingActive = true;
-
-    // Visual feedback: audio viz bars
-    showAudioVis();
-
-    // ── onboundary: word-level visual sync ──
-    let wordCount = 0;
-    const totalWords = text.split(/\s+/).filter(Boolean).length;
-    utt.onboundary = (e) => {
-      if (cancelToken?.cancelled) {
-        TTS.stopAll();
-        return;
-      }
-      if (e.name === "word") {
-        wordCount++;
-        pulseAudioVis(wordCount, totalWords);
-      }
-    };
-
-    // ── onerror: recovery ──
-    utt.onerror = (e) => {
-      if (cancelToken?.cancelled) return;
-      console.warn("[TTS] utterance error:", e.error, e.message || "");
-      // Attempt recovery: retry once via doSpeak for proper state tracking
-      if (text.length > 0) {
-        setTimeout(() => {
-          if (cancelToken?.cancelled) return;
-          finish(undefined, cancelToken);
-          doSpeak(text, lang, callback, cancelToken);
-        }, 300);
-      } else {
-        finish(callback, cancelToken);
-      }
-    };
-
-    // ── onend: cleanup ──
-    utt.onend = () => {
-      finish(callback, cancelToken);
-    };
-
-    // Start keep-alive for long utterances (Chrome 15s bug workaround)
+    // Long text → use chunked speaking to avoid Chrome 15s timeout
     if (totalWords > 8) {
-      startKeepAlive(cancelToken);
+      speakChunked(text, lang, callback, cancelToken);
+      return;
     }
 
-    try {
-      TTS.synth.speak(utt);
-    } catch {
+    // Short text → single utterance
+    speakSingle(text, lang, callback, cancelToken, 0, totalWords);
+  }, 50);
+}
+
+/**
+ * Speak a single utterance.
+ *
+ * @param skipFinishCleanup — If true, onend/onerror won't call finish() or
+ *   hideAudioVis. Used by speakChunked for intermediate chunks so audioVis stays
+ *   active and speakChunked manages its own lifecycle.
+ */
+function speakSingle(
+  text: string,
+  lang: string,
+  callback: (() => void) | undefined,
+  cancelToken: SpeechCancelToken | undefined,
+  wordOffset: number,
+  totalWords: number,
+  skipFinishCleanup: boolean = false,
+): void {
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = lang;
+  utt.volume = 0.85;
+  utt.rate = ttsRate;
+  utt.pitch = ttsPitch;
+
+  if (selectedVoiceURI) {
+    const voice = window.speechSynthesis.getVoices().find((v) => v.voiceURI === selectedVoiceURI);
+    if (voice) utt.voice = voice;
+  }
+
+  currentUtterance = utt;
+  currentCancelToken = cancelToken ?? null;
+  speakingActive = true;
+  showAudioVis();
+
+  // ── onboundary: word-level visual sync ──
+  let wordCount = wordOffset;
+  utt.onboundary = (e) => {
+    if (cancelToken?.cancelled) { TTS.stopAll(); return; }
+    if (e.name === "word") {
+      wordCount++;
+      pulseAudioVis(wordCount, totalWords);
+    }
+  };
+
+  // ── onerror ──
+  utt.onerror = (e) => {
+    if (cancelToken?.cancelled) return;
+    if (e.error === "interrupted") {
+      if (!TTS.synth.speaking) {
+        if (skipFinishCleanup) { if (callback) callback(); }
+        else finish(callback, cancelToken);
+      }
+      return;
+    }
+    console.warn("[TTS] utterance error:", e.error, e.message || "");
+    if (text.length > 0) {
+      setTimeout(() => {
+        if (cancelToken?.cancelled) return;
+        if (!skipFinishCleanup) finish(undefined, cancelToken);
+        speakSingle(text, lang, callback, cancelToken, wordOffset, totalWords, skipFinishCleanup);
+      }, 300);
+    } else {
+      if (skipFinishCleanup) { if (callback) callback(); }
+      else finish(callback, cancelToken);
+    }
+  };
+
+  // ── onend ──
+  utt.onend = () => {
+    if (skipFinishCleanup) {
+      // Chunked mode: just fire callback, keep audioVis & speakingActive alive
+      if (callback) callback();
+    } else {
       finish(callback, cancelToken);
     }
-  }, 50);
+  };
+
+  try {
+    TTS.synth.speak(utt);
+  } catch {
+    if (skipFinishCleanup) { if (callback) callback(); }
+    else finish(callback, cancelToken);
+  }
+}
+
+/** Speak long text by splitting into chunks and speaking sequentially. */
+function speakChunked(
+  text: string,
+  lang: string,
+  callback?: () => void,
+  cancelToken?: SpeechCancelToken,
+): void {
+  const chunks = splitIntoChunks(text);
+  if (chunks.length <= 1) {
+    // Fallback: single utterance
+    speakSingle(text, lang, callback, cancelToken, 0, text.split(/\s+/).filter(Boolean).length);
+    return;
+  }
+
+  currentCancelToken = cancelToken ?? null;
+  speakingActive = true;
+  showAudioVis();
+
+  const totalWords = text.split(/\s+/).filter(Boolean).length;
+  let chunkIndex = 0;
+  let wordOffset = 0;
+
+  function speakNext(): void {
+    if (cancelToken?.cancelled) {
+      finish(callback, cancelToken);
+      return;
+    }
+
+    if (chunkIndex >= chunks.length) {
+      finish(callback, cancelToken);
+      return;
+    }
+
+    const chunkText = chunks[chunkIndex];
+    const chunkWords = chunkText.split(/\s+/).filter(Boolean).length;
+    const currentOffset = wordOffset;
+    const isLastChunk = chunkIndex === chunks.length - 1;
+
+    // Intermediate chunks: skip finish() so audioVis & speakingActive stay alive.
+    // Final chunk: goes through normal finish() for full cleanup.
+    speakSingle(
+      chunkText,
+      lang,
+      () => {
+        if (cancelToken?.cancelled) return;
+        chunkIndex++;
+        wordOffset += chunkWords;
+        if (isLastChunk) {
+          finish(callback, cancelToken);
+        } else {
+          // Natural pause between chunks (shorter for comma splits)
+          const delay = chunkText.endsWith(',') || chunkText.endsWith(';') ? 100 : 200;
+          setTimeout(speakNext, delay);
+        }
+      },
+      cancelToken,
+      currentOffset,
+      totalWords,
+      !isLastChunk, // skipFinishCleanup for non-final chunks
+    );
+  }
+
+  speakNext();
 }
 
 function finish(callback?: () => void, cancelToken?: SpeechCancelToken, wasCancelled: boolean = false): void {
   speakingActive = false;
   currentUtterance = null;
-  stopKeepAlive();
   hideAudioVis();
-  // Only mutate cancelToken on actual cancellation, not normal completion
   if (wasCancelled && cancelToken) cancelToken.cancelled = true;
   if (callback) callback();
-}
-
-// ─── CHROME KEEP-ALIVE (15s bug fix) ───
-function startKeepAlive(cancelToken?: SpeechCancelToken): void {
-  stopKeepAlive();
-  keepAliveTimer = setInterval(() => {
-    if (cancelToken?.cancelled) {
-      stopKeepAlive();
-      return;
-    }
-    try {
-      // Pause + resume trick to reset Chrome's internal timer
-      if (TTS.synth.speaking) {
-        TTS.synth.pause();
-        TTS.synth.resume();
-      }
-    } catch {
-      // Mobile (Android) often throws on pause/resume — ignore
-    }
-  }, 7000);
-}
-
-function stopKeepAlive(): void {
-  if (keepAliveTimer) {
-    clearInterval(keepAliveTimer);
-    keepAliveTimer = null;
-  }
 }
 
 // ─── AUDIO VISUALIZER ───────────────────

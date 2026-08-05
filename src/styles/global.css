@@ -1791,6 +1791,16 @@ html.dyslexic-font {
 .om-card .om-card-name { font-size: 0.8rem; font-weight: 700; color: var(--text-slate); text-align: center; line-height: 1.3; }
 .om-card .om-card-info { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; }
 
+/* Disabled state when exercise is running */
+.om-card:disabled,
+.om-card.om-card-active {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    border-color: var(--primary-teal);
+    background: var(--primary-light);
+}
+
 /* Active exercise overlay */
 .om-active-card {
     background: var(--surface-card);

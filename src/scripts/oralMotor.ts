@@ -61,6 +61,11 @@ function getExerciseMotion(ex: typeof ALL_EXERCISES[number]): string {
 /* ── START GUIDED EXERCISE ────────────── */
 export function startOralMotorExercise(exId: string): void {
   if ("vibrate" in navigator) navigator.vibrate(15);
+
+  // Guard: don't restart the same running exercise (prevents timer leak)
+  const isRunning = state.exerciseId !== null && state.phase !== "done";
+  if (isRunning && state.exerciseId === exId) return;
+
   const exercise = findExercise(exId);
   if (!exercise) return;
 
@@ -153,6 +158,7 @@ function renderExerciseUI(exercise: typeof ALL_EXERCISES[number]): void {
   };
 
   const isDone = state.phase === "done";
+  const isHoldOrRest = state.phase === "hold" || state.phase === "rest";
   const icon = getExerciseIcon(exercise);
   const motionClass = getExerciseMotion(exercise);
 
@@ -207,7 +213,9 @@ function renderExerciseUI(exercise: typeof ALL_EXERCISES[number]): void {
       </div>
       ${isDone
         ? `<button class="om-btn om-btn-primary" onclick="window.startOralMotorExercise('${exercise.id}')">🔄 Ulangi</button>`
-        : `<button class="om-btn om-btn-primary" onclick="window.startOralMotorExercise('${exercise.id}')">${state.phase === 'ready' ? '▶ Mulai' : 'Lewati'}</button>`
+        : isHoldOrRest
+          ? `<button class="om-btn om-btn-primary" disabled style="opacity:0.5;cursor:not-allowed;pointer-events:none">⏳ ${state.phase === 'hold' ? 'Tahan...' : 'Istirahat...'}</button>`
+          : `<button class="om-btn om-btn-primary" onclick="window.startOralMotorExercise('${exercise.id}')">▶ Mulai</button>`
       }
       <button class="om-btn om-btn-secondary" onclick="window.openMirrorFullscreen()">🪞 Cermin Latihan</button>
     </div>
@@ -299,13 +307,14 @@ export function renderOralMotorList(): void {
             ${exercises.map(ex => {
               const done = omProgress[ex.id] || 0;
               const exIcon = getExerciseIcon(ex);
+              const isActive = state.exerciseId === ex.id && state.phase !== "done";
               return `
-              <button class="card om-card ${done > 0 ? 'done' : ''}"
-                onclick="window.startOralMotorExercise('${ex.id}')"
-                aria-label="Mulai latihan ${ex.name}${done > 0 ? `, sudah ${done}x` : ''}">
+              <button class="card om-card ${done > 0 ? 'done' : ''} ${isActive ? 'om-card-active' : ''}"
+                ${isActive ? 'disabled' : `onclick="window.startOralMotorExercise('${ex.id}')"`}
+                aria-label="${isActive ? 'Latihan sedang berjalan' : `Mulai latihan ${ex.name}${done > 0 ? `, sudah ${done}x` : ''}`}">
                 <span class="om-card-icon">${exIcon}</span>
                 <span class="om-card-name">${ex.name}</span>
-                <span class="om-card-info">${ex.holdSec > 0 ? `Tahan ${ex.holdSec}s` : 'Gerakan'} · ${ex.reps}x${done > 0 ? ` · ✅ ${done}x` : ''}</span>
+                <span class="om-card-info">${ex.holdSec > 0 ? `Tahan ${ex.holdSec}s` : 'Gerakan'} · ${ex.reps}x${done > 0 ? ` · ✅ ${done}x` : ''}${isActive ? ' · ⏳ berjalan' : ''}</span>
               </button>
             `}).join('')}
           </div>
